@@ -13,6 +13,10 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        display: ['Space Grotesk', 'system-ui', 'sans-serif'],
+        body: ['Inter', 'system-ui', 'sans-serif'],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -46,6 +50,12 @@ export default {
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
+        },
+        cinema: {
+          surface: "hsl(var(--cinema-surface))",
+          highlight: "hsl(var(--cinema-highlight))",
+          green: "hsl(var(--trending-green))",
+          red: "hsl(var(--trending-red))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
