@@ -1,24 +1,33 @@
 import { Flame, Globe, MapPin } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import SectionHeader from "./SectionHeader";
 import type { TrendingItem } from "@/data/movieData";
 
-const TrendingList = ({ items, icon, label }: { items: TrendingItem[]; icon: React.ReactNode; label: string }) => (
-  <div className="glass-card rounded-lg p-4">
-    <h3 className="font-display text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
-      {icon} {label}
-    </h3>
-    <div className="space-y-2">
-      {items.map((item) => (
-        <div key={item.title} className="flex items-center gap-3">
-          <span className="text-xs font-bold text-primary w-5 text-right">{item.rank}</span>
-          <div className="flex-1 h-px bg-border" />
-          <span className="text-sm text-foreground">{item.title}</span>
-          <Flame className="w-3 h-3 text-accent shrink-0" />
-        </div>
-      ))}
+const TrendingList = ({ items, icon, label }: { items: TrendingItem[]; icon: React.ReactNode; label: string }) => {
+  const navigate = useNavigate();
+
+  return (
+    <div className="glass-card rounded-lg p-4">
+      <h3 className="font-display text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
+        {icon} {label}
+      </h3>
+      <div className="space-y-2">
+        {items.map((item) => (
+          <div
+            key={item.title}
+            onClick={() => navigate(`/movie?title=${encodeURIComponent(item.title)}`)}
+            className="flex items-center gap-3 cursor-pointer hover:bg-secondary/50 rounded-md px-1 py-1 -mx-1 transition-colors"
+          >
+            <span className="text-xs font-bold text-primary w-5 text-right">{item.rank}</span>
+            <div className="flex-1 h-px bg-border" />
+            <span className="text-sm text-foreground hover:text-primary transition-colors">{item.title}</span>
+            <Flame className="w-3 h-3 text-accent shrink-0" />
+          </div>
+        ))}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const TrendingSection = ({ worldwide, india }: { worldwide: TrendingItem[]; india: TrendingItem[] }) => (
   <section>
