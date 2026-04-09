@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Film, Clapperboard, Wifi, WifiOff, Loader2, Search, Star, X } from "lucide-react";
 import FilterBar from "@/components/FilterBar";
 import DailySuggestions from "@/components/DailySuggestions";
@@ -11,11 +12,14 @@ import BonusSection from "@/components/BonusSection";
 import { useMovieIntelligence } from "@/hooks/useMovieIntelligence";
 import { useMovieSearch, SearchResult } from "@/hooks/useMovieSearch";
 
-const SearchResultCard = ({ movie }: { movie: SearchResult }) => (
-  <div className="glass-card rounded-lg p-4 space-y-3">
+const SearchResultCard = ({ movie, onClick }: { movie: SearchResult; onClick: () => void }) => (
+  <div
+    onClick={onClick}
+    className="glass-card rounded-lg p-4 space-y-3 cursor-pointer hover:border-primary/30 transition-all active:scale-[0.98]"
+  >
     <div className="flex items-start justify-between gap-2">
       <div>
-        <h3 className="font-display text-base font-bold text-foreground">{movie.title}</h3>
+        <h3 className="font-display text-base font-bold text-foreground hover:text-primary transition-colors">{movie.title}</h3>
         <p className="text-xs text-muted-foreground">
           {movie.year} • {movie.genre} • {movie.language}
         </p>
@@ -61,6 +65,7 @@ const SearchResultCard = ({ movie }: { movie: SearchResult }) => (
 );
 
 const Index = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [mood, setMood] = useState("Mixed");
   const [category, setCategory] = useState("All");
@@ -194,7 +199,7 @@ const Index = () => {
             {!isSearching && !searchError && results.length > 0 && (
               <div className="space-y-3">
                 {results.map((movie, i) => (
-                  <SearchResultCard key={`${movie.title}-${i}`} movie={movie} />
+                  <SearchResultCard key={`${movie.title}-${i}`} movie={movie} onClick={() => navigate(`/movie?title=${encodeURIComponent(movie.title)}`)} />
                 ))}
               </div>
             )}
