@@ -65,6 +65,7 @@ const SearchResultCard = ({ movie, onClick }: { movie: SearchResult; onClick: ()
 );
 
 const Index = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [mood, setMood] = useState("Mixed");
   const [category, setCategory] = useState("All");
@@ -198,7 +199,7 @@ const Index = () => {
             {!isSearching && !searchError && results.length > 0 && (
               <div className="space-y-3">
                 {results.map((movie, i) => (
-                  <SearchResultCard key={`${movie.title}-${i}`} movie={movie} />
+                  <SearchResultCard key={`${movie.title}-${i}`} movie={movie} onClick={() => navigate(`/movie?title=${encodeURIComponent(movie.title)}`)} />
                 ))}
               </div>
             )}
