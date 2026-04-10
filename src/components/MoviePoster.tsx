@@ -3,7 +3,7 @@ import { useMoviePoster } from "@/hooks/useMoviePoster";
 
 interface MoviePosterProps {
   title: string;
-  year?: string;
+  year?: string | number;
   genre?: string;
   size?: "sm" | "md" | "lg";
   className?: string;

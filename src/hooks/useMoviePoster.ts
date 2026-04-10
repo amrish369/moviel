@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const posterCache = new Map<string, string>();
 
-export const useMoviePoster = (title: string, year?: string, genre?: string) => {
+export const useMoviePoster = (title: string, year?: string | number, genre?: string) => {
   const [posterUrl, setPosterUrl] = useState<string | null>(posterCache.get(title) || null);
   const [isLoading, setIsLoading] = useState(!posterCache.has(title));
 
