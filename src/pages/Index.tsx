@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Film, Clapperboard, Wifi, WifiOff, Loader2, Search, Star, X, Send } from "lucide-react";
+import MoviePoster from "@/components/MoviePoster";
 import FilterBar from "@/components/FilterBar";
 import DailySuggestions from "@/components/DailySuggestions";
 import TodayReleases from "@/components/TodayReleases";
@@ -17,18 +18,21 @@ const SearchResultCard = ({ movie, onClick }: { movie: SearchResult; onClick: ()
     onClick={onClick}
     className="glass-card rounded-lg p-4 space-y-3 cursor-pointer hover:border-primary/30 transition-all active:scale-[0.98]"
   >
-    <div className="flex items-start justify-between gap-2">
-      <div>
-        <h3 className="font-display text-base font-bold text-foreground hover:text-primary transition-colors">{movie.title}</h3>
-        <p className="text-xs text-muted-foreground">
-          {movie.year} • {movie.genre} • {movie.language}
-        </p>
-      </div>
-      <div className="flex items-center gap-1 shrink-0">
-        <Star className="w-3.5 h-3.5 text-primary fill-primary" />
-        <span className="text-sm font-bold text-primary">{movie.imdb}</span>
-      </div>
-    </div>
+    <div className="flex items-start gap-3">
+      <MoviePoster title={movie.title} year={movie.year} genre={movie.genre} size="sm" />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <h3 className="font-display text-base font-bold text-foreground hover:text-primary transition-colors">{movie.title}</h3>
+            <p className="text-xs text-muted-foreground">
+              {movie.year} • {movie.genre} • {movie.language}
+            </p>
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            <Star className="w-3.5 h-3.5 text-primary fill-primary" />
+            <span className="text-sm font-bold text-primary">{movie.imdb}</span>
+          </div>
+        </div>
     {movie.director && (
       <p className="text-xs text-muted-foreground">
         <span className="text-foreground/70 font-medium">Director:</span> {movie.director}
