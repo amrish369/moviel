@@ -98,18 +98,29 @@ const MovieDetailPage = () => {
           )}
         </section>
 
-        {/* Trailer Button */}
-        {trailerUrl && (
+        {/* Action Buttons */}
+        <div className="flex gap-3">
+          {trailerUrl && (
+            <a
+              href={trailerUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-cinema-red/90 hover:bg-cinema-red text-white font-display font-medium text-sm transition-colors"
+            >
+              <Play className="w-4 h-4 fill-white" />
+              Watch Trailer
+            </a>
+          )}
           <a
-            href={trailerUrl}
+            href={`https://t.me/cineradarai?text=${encodeURIComponent(movie.title)}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-cinema-red/90 hover:bg-cinema-red text-white font-display font-medium text-sm transition-colors"
+            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-[hsl(200,80%,50%)]/90 hover:bg-[hsl(200,80%,50%)] text-white font-display font-medium text-sm transition-colors"
           >
-            <Play className="w-4 h-4 fill-white" />
-            Watch Trailer & Clips on YouTube
+            <Send className="w-4 h-4" />
+            Download from Telegram
           </a>
-        )}
+        </div>
 
         {/* Director & Writers */}
         <section className="glass-card rounded-xl p-5 space-y-4">
