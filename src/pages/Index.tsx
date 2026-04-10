@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Film, Clapperboard, Wifi, WifiOff, Loader2, Search, Star, X } from "lucide-react";
+import { Film, Clapperboard, Wifi, WifiOff, Loader2, Search, Star, X, Send } from "lucide-react";
 import FilterBar from "@/components/FilterBar";
 import DailySuggestions from "@/components/DailySuggestions";
 import TodayReleases from "@/components/TodayReleases";
@@ -57,6 +57,16 @@ const SearchResultCard = ({ movie, onClick }: { movie: SearchResult; onClick: ()
           {movie.verdict}
         </span>
       )}
+      <a
+        href="https://t.me/cineradarai"
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={(e) => e.stopPropagation()}
+        className="ml-auto flex items-center gap-1 text-[10px] font-medium px-2.5 py-1 rounded-full bg-[hsl(200,80%,50%)]/15 text-[hsl(200,80%,50%)] hover:bg-[hsl(200,80%,50%)]/25 transition-colors"
+      >
+        <Send className="w-3 h-3" />
+        Download
+      </a>
     </div>
     {movie.whyWatch && (
       <p className="text-xs text-primary/80 italic">💡 {movie.whyWatch}</p>
