@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, Star, Clock, Globe, Film, Users, Clapperboard,
-  DollarSign, Play, Loader2, User, Pen, Music, Camera, Award
+  DollarSign, Play, Loader2, User, Pen, Music, Camera, Award, Send
 } from "lucide-react";
 import { useMovieDetail } from "@/hooks/useMovieDetail";
 
