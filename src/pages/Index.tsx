@@ -58,7 +58,7 @@ const SearchResultCard = ({ movie, onClick }: { movie: SearchResult; onClick: ()
         </span>
       )}
       <a
-        href={`https://t.me/cineradarai?text=${encodeURIComponent(movie.title)}`}
+        href="https://t.me/cineradarai"
         target="_blank"
         rel="noopener noreferrer"
         onClick={(e) => e.stopPropagation()}

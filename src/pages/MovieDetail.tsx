@@ -112,7 +112,7 @@ const MovieDetailPage = () => {
             </a>
           )}
           <a
-            href={`https://t.me/cineradarai?text=${encodeURIComponent(movie.title)}`}
+            href="https://t.me/cineradarai"
             target="_blank"
             rel="noopener noreferrer"
             className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-[hsl(200,80%,50%)]/90 hover:bg-[hsl(200,80%,50%)] text-white font-display font-medium text-sm transition-colors"

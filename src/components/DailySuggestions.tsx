@@ -40,7 +40,7 @@ const DailySuggestions = ({ movies }: { movies: Movie[] }) => {
                   {movie.platform}
                 </span>
                 <a
-                  href={`https://t.me/cineradarai?text=${encodeURIComponent(movie.title)}`}
+                  href="https://t.me/cineradarai"
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
