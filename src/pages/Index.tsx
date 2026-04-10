@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Film, Clapperboard, Wifi, WifiOff, Loader2, Search, Star, X, Send } from "lucide-react";
+import MoviePoster from "@/components/MoviePoster";
 import FilterBar from "@/components/FilterBar";
 import DailySuggestions from "@/components/DailySuggestions";
 import TodayReleases from "@/components/TodayReleases";
@@ -15,62 +16,67 @@ import { useMovieSearch, SearchResult } from "@/hooks/useMovieSearch";
 const SearchResultCard = ({ movie, onClick }: { movie: SearchResult; onClick: () => void }) => (
   <div
     onClick={onClick}
-    className="glass-card rounded-lg p-4 space-y-3 cursor-pointer hover:border-primary/30 transition-all active:scale-[0.98]"
+    className="glass-card rounded-lg p-4 cursor-pointer hover:border-primary/30 transition-all active:scale-[0.98]"
   >
-    <div className="flex items-start justify-between gap-2">
-      <div>
-        <h3 className="font-display text-base font-bold text-foreground hover:text-primary transition-colors">{movie.title}</h3>
-        <p className="text-xs text-muted-foreground">
-          {movie.year} • {movie.genre} • {movie.language}
-        </p>
-      </div>
-      <div className="flex items-center gap-1 shrink-0">
-        <Star className="w-3.5 h-3.5 text-primary fill-primary" />
-        <span className="text-sm font-bold text-primary">{movie.imdb}</span>
+    <div className="flex items-start gap-3">
+      <MoviePoster title={movie.title} year={movie.year} genre={movie.genre} size="sm" />
+      <div className="flex-1 min-w-0 space-y-2">
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <h3 className="font-display text-base font-bold text-foreground hover:text-primary transition-colors">{movie.title}</h3>
+            <p className="text-xs text-muted-foreground">
+              {movie.year} • {movie.genre} • {movie.language}
+            </p>
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            <Star className="w-3.5 h-3.5 text-primary fill-primary" />
+            <span className="text-sm font-bold text-primary">{movie.imdb}</span>
+          </div>
+        </div>
+        {movie.director && (
+          <p className="text-xs text-muted-foreground">
+            <span className="text-foreground/70 font-medium">Director:</span> {movie.director}
+          </p>
+        )}
+        {movie.cast && movie.cast.length > 0 && (
+          <p className="text-xs text-muted-foreground">
+            <span className="text-foreground/70 font-medium">Cast:</span> {movie.cast.join(", ")}
+          </p>
+        )}
+        {movie.plot && (
+          <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{movie.plot}</p>
+        )}
+        <div className="flex items-center gap-3 pt-1">
+          {movie.platform && (
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground border border-border">
+              {movie.platform}
+            </span>
+          )}
+          {movie.verdict && (
+            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+              movie.verdict === "Watch" ? "bg-cinema-green/20 text-cinema-green" :
+              movie.verdict === "Skip" ? "bg-cinema-red/20 text-cinema-red" :
+              "bg-primary/20 text-primary"
+            }`}>
+              {movie.verdict}
+            </span>
+          )}
+          <a
+            href="https://t.me/cineradarai"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="ml-auto flex items-center gap-1 text-[10px] font-medium px-2.5 py-1 rounded-full bg-[hsl(200,80%,50%)]/15 text-[hsl(200,80%,50%)] hover:bg-[hsl(200,80%,50%)]/25 transition-colors"
+          >
+            <Send className="w-3 h-3" />
+            Download
+          </a>
+        </div>
+        {movie.whyWatch && (
+          <p className="text-xs text-primary/80 italic">💡 {movie.whyWatch}</p>
+        )}
       </div>
     </div>
-    {movie.director && (
-      <p className="text-xs text-muted-foreground">
-        <span className="text-foreground/70 font-medium">Director:</span> {movie.director}
-      </p>
-    )}
-    {movie.cast && movie.cast.length > 0 && (
-      <p className="text-xs text-muted-foreground">
-        <span className="text-foreground/70 font-medium">Cast:</span> {movie.cast.join(", ")}
-      </p>
-    )}
-    {movie.plot && (
-      <p className="text-xs text-muted-foreground leading-relaxed">{movie.plot}</p>
-    )}
-    <div className="flex items-center gap-3 pt-1">
-      {movie.platform && (
-        <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground border border-border">
-          {movie.platform}
-        </span>
-      )}
-      {movie.verdict && (
-        <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
-          movie.verdict === "Watch" ? "bg-cinema-green/20 text-cinema-green" :
-          movie.verdict === "Skip" ? "bg-cinema-red/20 text-cinema-red" :
-          "bg-primary/20 text-primary"
-        }`}>
-          {movie.verdict}
-        </span>
-      )}
-      <a
-        href="https://t.me/cineradarai"
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={(e) => e.stopPropagation()}
-        className="ml-auto flex items-center gap-1 text-[10px] font-medium px-2.5 py-1 rounded-full bg-[hsl(200,80%,50%)]/15 text-[hsl(200,80%,50%)] hover:bg-[hsl(200,80%,50%)]/25 transition-colors"
-      >
-        <Send className="w-3 h-3" />
-        Download
-      </a>
-    </div>
-    {movie.whyWatch && (
-      <p className="text-xs text-primary/80 italic">💡 {movie.whyWatch}</p>
-    )}
   </div>
 );
 
