@@ -42,14 +42,14 @@ serve(async (req) => {
       console.error("AI image generation error:", response.status, errText);
       
       if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Credits exhausted", code: "CREDITS_EXHAUSTED" }), {
-          status: 402,
+        return new Response(JSON.stringify({ error: "CREDITS_EXHAUSTED", fallback: true }), {
+          status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limited, try again later", code: "RATE_LIMITED" }), {
-          status: 429,
+        return new Response(JSON.stringify({ error: "RATE_LIMITED", fallback: true }), {
+          status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
