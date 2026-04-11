@@ -12,7 +12,7 @@ serve(async (req) => {
 
   try {
     const { title, year, genre } = await req.json();
-    if (!title) {
+    if (!title || typeof title !== "string" || title.trim().length < 1) {
       return new Response(JSON.stringify({ error: "title is required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -22,7 +22,7 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const prompt = `Create a cinematic movie poster for a film called "${title}"${year ? ` (${year})` : ""}${genre ? `, genre: ${genre}` : ""}. Professional Bollywood/Hollywood movie poster style with dramatic lighting, vibrant colors, and bold typography showing the movie title. No text other than the title. High quality, detailed, atmospheric.`;
+    const prompt = `Create a cinematic movie poster for a film called "${title.trim()}"${year ? ` (${year})` : ""}${genre ? `, genre: ${genre}` : ""}. Professional movie poster style with dramatic lighting, vibrant colors, and bold typography showing the movie title. No text other than the title. High quality, detailed, atmospheric.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -40,13 +40,22 @@ serve(async (req) => {
     if (!response.ok) {
       const errText = await response.text();
       console.error("AI image generation error:", response.status, errText);
+      
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ error: "Credits exhausted", code: "CREDITS_EXHAUSTED" }), {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limited, try again later" }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        return new Response(JSON.stringify({ error: "Rate limited, try again later", code: "RATE_LIMITED" }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       return new Response(JSON.stringify({ error: "Image generation failed" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -55,7 +64,8 @@ serve(async (req) => {
 
     if (!imageUrl) {
       return new Response(JSON.stringify({ error: "No image generated" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -65,7 +75,8 @@ serve(async (req) => {
   } catch (e) {
     console.error("movie-poster error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
