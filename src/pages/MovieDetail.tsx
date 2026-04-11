@@ -33,7 +33,7 @@ const MovieDetailPage = () => {
     );
   }
 
-  if (error || !movie) {
+  if (!movie && (error || !isLoading)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="glass-card rounded-xl p-8 text-center max-w-md">
@@ -45,6 +45,8 @@ const MovieDetailPage = () => {
       </div>
     );
   }
+
+  if (!movie) return null;
 
   const trailerUrl = movie.trailerQuery
     ? `https://www.youtube.com/results?search_query=${encodeURIComponent(movie.trailerQuery)}`
@@ -73,6 +75,12 @@ const MovieDetailPage = () => {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+        {error && (
+          <div className="bg-primary/10 border border-primary/30 rounded-lg p-3 text-sm text-primary">
+            ⚠️ {error}
+          </div>
+        )}
+
         {/* Hero Info */}
         <section className="glass-card rounded-xl p-5 space-y-4">
           <MoviePoster title={movie.title} year={movie.year} genre={movie.genre} size="lg" className="mx-auto" />

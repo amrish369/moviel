@@ -47,6 +47,18 @@ export interface MovieDetail {
   }[];
 }
 
+// Generate a basic fallback movie detail from just the title
+function createFallbackDetail(title: string): MovieDetail {
+  return {
+    title,
+    year: new Date().getFullYear(),
+    genre: "Unknown",
+    imdb: 0,
+    language: "Unknown",
+    plot: "Movie details are temporarily unavailable. Please try again later.",
+  };
+}
+
 export function useMovieDetail() {
   const [movie, setMovie] = useState<MovieDetail | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -63,12 +75,22 @@ export function useMovieDetail() {
       });
 
       if (fnError) throw fnError;
-      if (data?.error) throw new Error(data.error);
+
+      // Handle fallback signal from edge function (credits exhausted / rate limited)
+      if (data?.fallback) {
+        setError(data.message || "AI service temporarily unavailable");
+        setMovie(createFallbackDetail(title));
+        return;
+      }
+
+      if (data?.error && !data?.fallback) throw new Error(data.error);
 
       setMovie(data);
     } catch (err) {
       console.error("Failed to fetch movie detail:", err);
       setError(err instanceof Error ? err.message : "Failed to load movie details");
+      // Still show a basic page instead of blank screen
+      setMovie(createFallbackDetail(title));
     } finally {
       setIsLoading(false);
     }
