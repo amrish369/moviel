@@ -33,7 +33,7 @@ const MovieDetailPage = () => {
     );
   }
 
-  if (error || !movie) {
+  if (!movie && (error || !isLoading)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="glass-card rounded-xl p-8 text-center max-w-md">
@@ -45,6 +45,8 @@ const MovieDetailPage = () => {
       </div>
     );
   }
+
+  if (!movie) return null;
 
   const trailerUrl = movie.trailerQuery
     ? `https://www.youtube.com/results?search_query=${encodeURIComponent(movie.trailerQuery)}`
