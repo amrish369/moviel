@@ -75,14 +75,16 @@ const MovieDetailPage = () => {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
-        {/* Hero Info */}
-        <section className="glass-card rounded-xl p-5 space-y-4">
-          <MoviePoster title={movie.title} year={movie.year} genre={movie.genre} size="lg" className="mx-auto" />
         {error && (
           <div className="bg-primary/10 border border-primary/30 rounded-lg p-3 text-sm text-primary">
             ⚠️ {error}
           </div>
         )}
+
+        {/* Hero Info */}
+        <section className="glass-card rounded-xl p-5 space-y-4">
+          <MoviePoster title={movie.title} year={movie.year} genre={movie.genre} size="lg" className="mx-auto" />
+          {movie.tagline && (
             <p className="text-sm italic text-primary/80 text-center">"{movie.tagline}"</p>
           )}
           <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
