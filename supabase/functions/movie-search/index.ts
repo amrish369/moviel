@@ -19,78 +19,57 @@ serve(async (req) => {
       });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    const OMDB_API_KEY = Deno.env.get("OMDB_API_KEY");
+    if (!OMDB_API_KEY) throw new Error("OMDB_API_KEY is not configured");
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          {
-            role: "system",
-            content: `You are a movie database expert. When given a movie/series name, return detailed info as a JSON array of matching results. 
-Return ONLY valid JSON array (no markdown). Each item:
-{
-  "title": "Full Title",
-  "year": 2023,
-  "genre": "Action/Drama",
-  "imdb": 7.5,
-  "platform": "Netflix/Theaters/Prime Video/etc",
-  "language": "Hindi/English/etc",
-  "director": "Name",
-  "cast": ["Actor 1", "Actor 2"],
-  "plot": "Brief 2-line plot summary",
-  "verdict": "Watch/Skip/OTT Wait",
-  "whyWatch": "One compelling reason to watch"
-}
-Return up to 3 best matches. Use REAL data. If the movie exists, provide accurate info. If unsure about exact numbers, use ~ prefix.`,
-          },
-          {
-            role: "user",
-            content: `Search for: "${query.trim()}"`,
-          },
-        ],
-      }),
-    });
+    // Use OMDb search API
+    const params = new URLSearchParams({ apikey: OMDB_API_KEY, s: query.trim() });
+    const res = await fetch(`https://www.omdbapi.com/?${params}`);
+    const data = await res.json();
 
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error("AI gateway error:", response.status, errText);
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "CREDITS_EXHAUSTED", message: "AI credits exhausted. Search unavailable.", fallback: true, results: [] }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "RATE_LIMITED", message: "Too many requests. Please try again.", fallback: true, results: [] }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      throw new Error(`AI gateway error: ${response.status}`);
+    if (data.Response === "False") {
+      return new Response(JSON.stringify({ results: [], message: data.Error || "No results found" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    const aiData = await response.json();
-    const content = aiData.choices?.[0]?.message?.content;
-    if (!content) throw new Error("No content in AI response");
+    // Fetch detailed info for top 3 results
+    const topResults = (data.Search || []).slice(0, 3);
+    const detailed = await Promise.all(
+      topResults.map(async (item: any) => {
+        try {
+          const detailRes = await fetch(
+            `https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&i=${item.imdbID}&plot=short`
+          );
+          const d = await detailRes.json();
+          return {
+            title: d.Title || item.Title,
+            year: parseInt(d.Year) || parseInt(item.Year) || 0,
+            genre: d.Genre || "N/A",
+            imdb: parseFloat(d.imdbRating) || 0,
+            platform: d.Type === "series" ? "Streaming" : "Theatrical",
+            language: d.Language || "English",
+            director: d.Director || "N/A",
+            cast: d.Actors ? d.Actors.split(", ") : [],
+            plot: d.Plot || "",
+            verdict: parseFloat(d.imdbRating) >= 7 ? "Watch" : parseFloat(d.imdbRating) >= 5 ? "OTT Wait" : "Skip",
+            whyWatch: d.Plot ? d.Plot.substring(0, 100) : "",
+            poster: d.Poster && d.Poster !== "N/A" ? d.Poster : null,
+          };
+        } catch {
+          return {
+            title: item.Title,
+            year: parseInt(item.Year) || 0,
+            genre: "N/A",
+            imdb: 0,
+            platform: "Unknown",
+            language: "English",
+          };
+        }
+      })
+    );
 
-    let results;
-    try {
-      const cleaned = content.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
-      results = JSON.parse(cleaned);
-      if (!Array.isArray(results)) results = [results];
-    } catch {
-      console.error("Failed to parse search response:", content);
-      throw new Error("Failed to parse search results");
-    }
-
-    return new Response(JSON.stringify({ results }), {
+    return new Response(JSON.stringify({ results: detailed }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
