@@ -10,6 +10,9 @@ import SmartReviews from "@/components/SmartReviews";
 import BoxOfficeSection from "@/components/BoxOfficeSection";
 import TrendingSection from "@/components/TrendingSection";
 import BonusSection from "@/components/BonusSection";
+import ActorSpotlightSection from "@/components/ActorSpotlight";
+import OttThisWeek from "@/components/OttThisWeek";
+import ThisDayInBollywood from "@/components/ThisDayInBollywood";
 import { useMovieIntelligence } from "@/hooks/useMovieIntelligence";
 import { useMovieSearch, SearchResult } from "@/hooks/useMovieSearch";
 
