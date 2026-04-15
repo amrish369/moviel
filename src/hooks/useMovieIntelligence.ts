@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import type { Movie, Release, Upcoming, Review, BoxOffice, TrendingItem } from "@/data/movieData";
+import type { Movie, Release, Upcoming, Review, BoxOffice, TrendingItem, ActorSpotlight, OttRelease, ThisDayFact } from "@/data/movieData";
 import { validateDashboardData } from "@/lib/movieValidation";
 import {
   dailySuggestions as fallbackSuggestions,
@@ -12,6 +12,9 @@ import {
   trendingIndia as fallbackIndia,
   hiddenGem as fallbackGem,
   quoteOfTheDay as fallbackQuote,
+  actorSpotlight as fallbackSpotlight,
+  ottThisWeek as fallbackOtt,
+  thisDayInBollywood as fallbackThisDay,
 } from "@/data/movieData";
 
 export interface MovieDashboard {
@@ -24,6 +27,9 @@ export interface MovieDashboard {
   trendingIndia: TrendingItem[];
   hiddenGem: { title: string; description: string; imdb: number };
   quoteOfTheDay: { quote: string; movie: string; character: string };
+  actorSpotlight: ActorSpotlight[];
+  ottThisWeek: OttRelease[];
+  thisDayInBollywood: ThisDayFact;
 }
 
 const fallbackData: MovieDashboard = {
@@ -36,6 +42,9 @@ const fallbackData: MovieDashboard = {
   trendingIndia: fallbackIndia,
   hiddenGem: fallbackGem,
   quoteOfTheDay: fallbackQuote,
+  actorSpotlight: fallbackSpotlight,
+  ottThisWeek: fallbackOtt,
+  thisDayInBollywood: fallbackThisDay,
 };
 
 export function useMovieIntelligence() {
@@ -56,7 +65,6 @@ export function useMovieIntelligence() {
       if (fnError) throw fnError;
       if (result?.error) throw new Error(result.error);
 
-      // Validate and sanitize all AI-returned data
       const validated = validateDashboardData(result);
 
       setData({
@@ -69,10 +77,13 @@ export function useMovieIntelligence() {
         trendingIndia: validated.trendingIndia?.length ? validated.trendingIndia : fallbackData.trendingIndia,
         hiddenGem: validated.hiddenGem || fallbackData.hiddenGem,
         quoteOfTheDay: validated.quoteOfTheDay || fallbackData.quoteOfTheDay,
+        actorSpotlight: result.actorSpotlight?.length ? result.actorSpotlight : fallbackData.actorSpotlight,
+        ottThisWeek: result.ottThisWeek?.length ? result.ottThisWeek : fallbackData.ottThisWeek,
+        thisDayInBollywood: result.thisDayInBollywood || fallbackData.thisDayInBollywood,
       });
       setIsLive(true);
     } catch (err) {
-      console.error("Failed to fetch AI movie data:", err);
+      console.error("Failed to fetch movie data:", err);
       setError(err instanceof Error ? err.message : "Failed to load live data");
       setData(fallbackData);
     } finally {

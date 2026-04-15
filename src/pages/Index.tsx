@@ -10,6 +10,9 @@ import SmartReviews from "@/components/SmartReviews";
 import BoxOfficeSection from "@/components/BoxOfficeSection";
 import TrendingSection from "@/components/TrendingSection";
 import BonusSection from "@/components/BonusSection";
+import ActorSpotlightSection from "@/components/ActorSpotlight";
+import OttThisWeek from "@/components/OttThisWeek";
+import ThisDayInBollywood from "@/components/ThisDayInBollywood";
 import { useMovieIntelligence } from "@/hooks/useMovieIntelligence";
 import { useMovieSearch, SearchResult } from "@/hooks/useMovieSearch";
 
@@ -232,8 +235,11 @@ const Index = () => {
         {!showSearchResults && (
           <>
             <DailySuggestions movies={data.dailySuggestions} />
+            <OttThisWeek releases={data.ottThisWeek} />
             <TodayReleases releases={data.todayReleases} />
+            <ThisDayInBollywood fact={data.thisDayInBollywood} />
             <UpcomingMovies movies={data.upcomingMovies} />
+            <ActorSpotlightSection actors={data.actorSpotlight} />
             <SmartReviews reviews={data.reviews} />
             <BoxOfficeSection data={data.boxOffice} />
             <TrendingSection worldwide={data.trendingWorldwide} india={data.trendingIndia} />
