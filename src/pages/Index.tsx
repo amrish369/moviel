@@ -235,8 +235,11 @@ const Index = () => {
         {!showSearchResults && (
           <>
             <DailySuggestions movies={data.dailySuggestions} />
+            <OttThisWeek releases={data.ottThisWeek} />
             <TodayReleases releases={data.todayReleases} />
+            <ThisDayInBollywood fact={data.thisDayInBollywood} />
             <UpcomingMovies movies={data.upcomingMovies} />
+            <ActorSpotlightSection actors={data.actorSpotlight} />
             <SmartReviews reviews={data.reviews} />
             <BoxOfficeSection data={data.boxOffice} />
             <TrendingSection worldwide={data.trendingWorldwide} india={data.trendingIndia} />
