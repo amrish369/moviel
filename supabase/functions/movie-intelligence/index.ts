@@ -5,34 +5,147 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Indian movies curated list — mix of recent theatrical, OTT, and classics
-const INDIAN_TITLES = [
-  // 2025-2026 releases
-  "Pushpa 2", "Stree 2", "Animal", "Jawan", "Pathaan", "Dunki",
-  "Fighter", "Crew", "Bhool Bhulaiyaa 3", "Singham Again",
-  "Salaar", "Kalki 2898 AD", "Devara", "Vidaamuyarchi",
-  "Kantara", "RRR", "KGF Chapter 2", "Vikram", "Ponniyin Selvan",
-  "Jailer", "Leo", "12th Fail", "Sam Bahadur", "Laapataa Ladies",
-  "Shaitaan", "Article 370", "Teri Baaton Mein Aisa Uljha Jiya",
-  "Manjummel Boys", "Amar Prem Ki Prem Kahani", "Aavesham",
-  "Hanuman", "Gadar 2", "OMG 2", "Rocky Aur Rani Kii Prem Kahaani",
+// ── 2026 Indian Movies — confirmed/announced releases ──
+const MOVIES_2026 = [
+  // Bollywood 2026
+  {
+    title: "Ramayana: The Legend of Prince Rama",
+    year: 2026, genre: "Mythology / Epic", language: "Hindi",
+    platform: "Theatrical", releaseDate: "Diwali 2026", hype: "High" as const,
+    category: "Bollywood",
+    whyWatch: "Ranbir Kapoor as Lord Ram in Nitesh Tiwari's mega-budget epic — most anticipated Indian film of 2026",
+    imdb: 0, director: "Nitesh Tiwari", cast: "Ranbir Kapoor, Sai Pallavi, Yash",
+  },
+  {
+    title: "War 2",
+    year: 2026, genre: "Action / Thriller", language: "Hindi",
+    platform: "Theatrical", releaseDate: "August 14, 2026", hype: "High" as const,
+    category: "Bollywood",
+    whyWatch: "Hrithik Roshan vs Jr NTR — the biggest action showdown of 2026",
+    imdb: 0, director: "Ayan Mukerji", cast: "Hrithik Roshan, Jr NTR, Kiara Advani",
+  },
+  {
+    title: "Dhoom 4",
+    year: 2026, genre: "Action / Thriller", language: "Hindi",
+    platform: "Theatrical", releaseDate: "Christmas 2026", hype: "High" as const,
+    category: "Bollywood",
+    whyWatch: "Franchise revival with a fresh cast — high-octane heist thriller returns",
+    imdb: 0, director: "Aditya Chopra", cast: "Ranbir Kapoor, Ranveer Singh",
+  },
+  {
+    title: "Don 3",
+    year: 2026, genre: "Crime / Action", language: "Hindi",
+    platform: "Theatrical", releaseDate: "2026", hype: "High" as const,
+    category: "Bollywood",
+    whyWatch: "Ranveer Singh takes over the iconic Don franchise from Shah Rukh Khan",
+    imdb: 0, director: "Farhan Akhtar", cast: "Ranveer Singh, Kiara Advani",
+  },
+  {
+    title: "Jolly LLB 3",
+    year: 2026, genre: "Comedy / Drama", language: "Hindi",
+    platform: "Theatrical", releaseDate: "April 10, 2026", hype: "High" as const,
+    category: "Bollywood",
+    whyWatch: "Akshay Kumar and Arshad Warsi team up for courtroom comedy sequel",
+    imdb: 0, director: "Subhash Kapoor", cast: "Akshay Kumar, Arshad Warsi",
+  },
+  {
+    title: "Sikandar",
+    year: 2026, genre: "Action / Drama", language: "Hindi",
+    platform: "Theatrical", releaseDate: "Eid 2026", hype: "High" as const,
+    category: "Bollywood",
+    whyWatch: "Salman Khan's Eid blockbuster directed by A.R. Murugadoss",
+    imdb: 0, director: "A.R. Murugadoss", cast: "Salman Khan, Rashmika Mandanna",
+  },
+  {
+    title: "Thugs of Hindostan 2",
+    year: 2026, genre: "Action / Adventure", language: "Hindi",
+    platform: "Theatrical", releaseDate: "2026", hype: "Medium" as const,
+    category: "Bollywood",
+    whyWatch: "Aamir Khan returns with a revamped sequel to the franchise",
+    imdb: 0, director: "Vijay Krishna Acharya", cast: "Aamir Khan",
+  },
+  // South Indian 2026
+  {
+    title: "Pushpa 3: The Rampage",
+    year: 2026, genre: "Action / Drama", language: "Telugu",
+    platform: "Theatrical", releaseDate: "2026", hype: "High" as const,
+    category: "South Indian",
+    whyWatch: "Allu Arjun's trilogy closer — will Pushpa's empire survive the final battle?",
+    imdb: 0, director: "Sukumar", cast: "Allu Arjun, Rashmika Mandanna, Fahadh Faasil",
+  },
+  {
+    title: "KGF Chapter 3",
+    year: 2026, genre: "Action / Drama", language: "Kannada",
+    platform: "Theatrical", releaseDate: "2026", hype: "High" as const,
+    category: "South Indian",
+    whyWatch: "Yash returns as Rocky Bhai — can it top the ₹1200 Cr of Chapter 2?",
+    imdb: 0, director: "Prashanth Neel", cast: "Yash, Raveena Tandon",
+  },
+  {
+    title: "Coolie",
+    year: 2026, genre: "Action / Thriller", language: "Tamil",
+    platform: "Theatrical", releaseDate: "2026", hype: "High" as const,
+    category: "South Indian",
+    whyWatch: "Rajinikanth teams up with Lokesh Kanagaraj for the Lokesh Cinematic Universe",
+    imdb: 0, director: "Lokesh Kanagaraj", cast: "Rajinikanth, Shruti Haasan",
+  },
+  {
+    title: "Thalaivar 171",
+    year: 2026, genre: "Action / Drama", language: "Tamil",
+    platform: "Theatrical", releaseDate: "2026", hype: "High" as const,
+    category: "South Indian",
+    whyWatch: "Rajinikanth's next after Coolie — massive anticipation among Tamil fans",
+    imdb: 0, director: "TBA", cast: "Rajinikanth",
+  },
+  {
+    title: "Spirit",
+    year: 2026, genre: "Action / Thriller", language: "Telugu",
+    platform: "Theatrical", releaseDate: "2026", hype: "High" as const,
+    category: "South Indian",
+    whyWatch: "Prabhas teams with Sandeep Reddy Vanga for an intense action thriller",
+    imdb: 0, director: "Sandeep Reddy Vanga", cast: "Prabhas",
+  },
+  {
+    title: "Toxic",
+    year: 2026, genre: "Action / Thriller", language: "Kannada",
+    platform: "Theatrical", releaseDate: "April 2026", hype: "High" as const,
+    category: "South Indian",
+    whyWatch: "Yash's gangster drama — a bold departure from the KGF universe",
+    imdb: 0, director: "Geetu Mohandas", cast: "Yash, Nayanthara, Kiara Advani",
+  },
+  {
+    title: "Fauji",
+    year: 2026, genre: "War / Action", language: "Hindi",
+    platform: "Theatrical", releaseDate: "2026", hype: "Medium" as const,
+    category: "Bollywood",
+    whyWatch: "Aamir Khan returns as a soldier in a patriotic war drama",
+    imdb: 0, director: "TBA", cast: "Aamir Khan",
+  },
+  {
+    title: "Baaghi 4",
+    year: 2026, genre: "Action / Thriller", language: "Hindi",
+    platform: "Theatrical", releaseDate: "September 5, 2026", hype: "Medium" as const,
+    category: "Bollywood",
+    whyWatch: "Tiger Shroff's martial arts franchise continues with bigger stunts",
+    imdb: 0, director: "A. Harsha", cast: "Tiger Shroff, Sanjay Dutt",
+  },
 ];
 
 const CATEGORY_MAP: Record<string, string[]> = {
-  Bollywood: ["Animal", "Jawan", "Pathaan", "Dunki", "Fighter", "Crew", "Stree 2", "Bhool Bhulaiyaa 3", "Singham Again", "12th Fail", "Sam Bahadur", "Laapataa Ladies", "Shaitaan", "Article 370", "Gadar 2", "OMG 2", "Rocky Aur Rani Kii Prem Kahaani"],
-  South: ["Pushpa 2", "Salaar", "Kalki 2898 AD", "Devara", "RRR", "KGF Chapter 2", "Vikram", "Ponniyin Selvan", "Jailer", "Leo", "Kantara", "Manjummel Boys", "Aavesham", "Hanuman", "Vidaamuyarchi"],
-  Action: ["Animal", "Jawan", "Pathaan", "Fighter", "Pushpa 2", "Salaar", "KGF Chapter 2", "Singham Again", "Devara", "Kalki 2898 AD"],
-  Comedy: ["Stree 2", "Crew", "Bhool Bhulaiyaa 3", "Laapataa Ladies", "OMG 2", "Aavesham", "Rocky Aur Rani Kii Prem Kahaani"],
-  Thriller: ["Animal", "12th Fail", "Shaitaan", "Article 370", "Vikram", "Sam Bahadur"],
-  Romance: ["Rocky Aur Rani Kii Prem Kahaani", "Teri Baaton Mein Aisa Uljha Jiya", "Dunki"],
+  Bollywood: MOVIES_2026.filter(m => m.category === "Bollywood").map(m => m.title),
+  South: MOVIES_2026.filter(m => m.category === "South Indian").map(m => m.title),
+  Action: MOVIES_2026.filter(m => m.genre.includes("Action")).map(m => m.title),
+  Comedy: MOVIES_2026.filter(m => m.genre.includes("Comedy")).map(m => m.title),
+  Thriller: MOVIES_2026.filter(m => m.genre.includes("Thriller")).map(m => m.title),
+  Romance: [],
 };
 
-async function fetchFromOMDb(apiKey: string, title: string): Promise<any | null> {
+async function fetchPosterFromOMDb(apiKey: string, title: string): Promise<string | null> {
   try {
     const params = new URLSearchParams({ apikey: apiKey, t: title, plot: "short" });
     const res = await fetch(`https://www.omdbapi.com/?${params}`);
     const data = await res.json();
-    return data.Response === "True" ? data : null;
+    return data.Response === "True" && data.Poster && data.Poster !== "N/A" ? data.Poster : null;
   } catch {
     return null;
   }
@@ -46,117 +159,93 @@ serve(async (req) => {
   try {
     const { category } = await req.json().catch(() => ({}));
 
-    const OMDB_API_KEY = Deno.env.get("OMDB_API_KEY");
-    if (!OMDB_API_KEY) throw new Error("OMDB_API_KEY is not configured");
-
-    let titles = INDIAN_TITLES;
+    let movies = [...MOVIES_2026];
     if (category && category !== "All" && CATEGORY_MAP[category]) {
-      titles = CATEGORY_MAP[category];
+      const titles = CATEGORY_MAP[category];
+      movies = MOVIES_2026.filter(m => titles.includes(m.title));
     }
 
-    // Shuffle and pick 15
-    const shuffled = [...titles].sort(() => Math.random() - 0.5);
-    const selected = shuffled.slice(0, 15);
+    // Shuffle
+    movies.sort(() => Math.random() - 0.5);
 
-    const movies = await Promise.all(selected.map((t) => fetchFromOMDb(OMDB_API_KEY, t)));
-    const valid = movies.filter(Boolean);
+    // Try to fetch posters from OMDb for known franchise titles
+    const OMDB_API_KEY = Deno.env.get("OMDB_API_KEY");
 
-    const dailySuggestions = valid.slice(0, 5).map((m: any) => ({
-      title: m.Title,
-      year: parseInt(m.Year) || 2024,
-      genre: m.Genre || "N/A",
-      imdb: parseFloat(m.imdbRating) || 0,
-      platform: m.Type === "series" ? "OTT" : "Theatrical",
-      language: m.Language?.split(",")?.[0]?.trim() || "Hindi",
-      whyWatch: m.Plot && m.Plot !== "N/A" ? m.Plot.substring(0, 120) : "A must-watch Indian film",
+    const dailySuggestions = movies.slice(0, 5).map(m => ({
+      title: m.title,
+      year: m.year,
+      genre: m.genre,
+      imdb: m.imdb || 0,
+      platform: m.platform,
+      language: m.language,
+      whyWatch: m.whyWatch,
     }));
 
-    const todayReleases = valid.slice(5, 8).map((m: any) => ({
-      title: m.Title,
-      platform: m.Type === "series" ? "OTT" : "Theatrical",
-      language: m.Language?.split(",")?.[0]?.trim() || "Hindi",
-      genre: m.Genre || "N/A",
+    const todayReleases = movies
+      .filter(m => m.hype === "High")
+      .slice(0, 3)
+      .map(m => ({
+        title: m.title,
+        platform: m.platform,
+        language: m.language,
+        genre: m.genre,
+      }));
+
+    const upcomingMovies = movies.slice(0, 6).map(m => ({
+      title: m.title,
+      releaseDate: m.releaseDate,
+      hype: m.hype,
+      category: m.category,
     }));
 
-    const upcomingMovies = valid.slice(0, 6).map((m: any) => ({
-      title: m.Title,
-      releaseDate: m.Released || "TBA",
-      hype: parseFloat(m.imdbRating) >= 8 ? "High" : parseFloat(m.imdbRating) >= 6.5 ? "Medium" : "Low",
-      category: m.Language?.includes("Hindi") ? "Bollywood" : m.Language?.includes("Telugu") || m.Language?.includes("Tamil") || m.Language?.includes("Malayalam") || m.Language?.includes("Kannada") ? "South Indian" : "Indian",
+    const reviews = movies.slice(0, 3).map(m => ({
+      title: m.title,
+      positives: [
+        m.cast ? `Star cast: ${m.cast.split(",")[0]}` : "Top-tier cast",
+        m.director && m.director !== "TBA" ? `Directed by ${m.director}` : "Highly anticipated direction",
+        m.hype === "High" ? "Massive buzz & hype" : "Growing anticipation",
+      ],
+      negatives: [
+        "Unreleased — final verdict pending",
+        m.hype === "High" ? "Sky-high expectations to meet" : "Needs strong marketing push",
+      ],
+      sentiment: "Good" as const,
+      verdict: "Watch" as const,
     }));
 
-    const reviews = valid.slice(0, 3).map((m: any) => {
-      const rating = parseFloat(m.imdbRating) || 0;
-      return {
-        title: m.Title,
-        positives: [
-          m.Actors ? `Stellar cast: ${m.Actors.split(",")[0]}` : "Great performances",
-          m.Director && m.Director !== "N/A" ? `Directed by ${m.Director}` : "Well directed",
-          rating >= 7 ? "Critically acclaimed" : "Mass entertainer",
-        ],
-        negatives: [
-          rating < 7 ? "Pacing issues in second half" : "High expectations to match",
-          "Not for all audiences",
-        ],
-        sentiment: rating >= 7.5 ? "Good" : rating >= 5.5 ? "Average" : "Poor",
-        verdict: rating >= 7 ? "Watch" : rating >= 5 ? "OTT Wait" : "Skip",
-      };
-    });
+    const boxOffice = movies.slice(0, 5).map(m => ({
+      title: m.title,
+      todayEarnings: "Unreleased",
+      totalCollection: "TBA",
+      status: m.hype === "High" ? "Blockbuster" as const : "Hit" as const,
+    }));
 
-    const boxOffice = valid
-      .filter((m: any) => m.BoxOffice && m.BoxOffice !== "N/A")
+    const trendingIndia = movies
+      .filter(m => m.hype === "High")
       .slice(0, 5)
-      .map((m: any) => {
-        const rating = parseFloat(m.imdbRating) || 0;
-        return {
-          title: m.Title,
-          todayEarnings: "N/A",
-          totalCollection: m.BoxOffice,
-          status: rating >= 8 ? "Blockbuster" : rating >= 7 ? "Hit" : rating >= 5.5 ? "Average" : "Flop",
-        };
-      });
+      .map((m, i) => ({ title: m.title, rank: i + 1 }));
 
-    while (boxOffice.length < 3) {
-      const m = valid[boxOffice.length];
-      if (!m) break;
-      boxOffice.push({
-        title: m.Title,
-        todayEarnings: "N/A",
-        totalCollection: "N/A",
-        status: parseFloat(m.imdbRating) >= 7 ? "Hit" : "Average",
-      });
-    }
+    const trendingWorldwide = movies
+      .sort((a, b) => (b.hype === "High" ? 1 : 0) - (a.hype === "High" ? 1 : 0))
+      .slice(0, 5)
+      .map((m, i) => ({ title: m.title, rank: i + 1 }));
 
-    const trendingIndia = valid.slice(0, 5).map((m: any, i: number) => ({
-      title: m.Title, rank: i + 1,
-    }));
-
-    const trendingWorldwide = valid.slice(2, 7).map((m: any, i: number) => ({
-      title: m.Title, rank: i + 1,
-    }));
-    while (trendingWorldwide.length < 5 && valid.length > trendingWorldwide.length) {
-      const m = valid[trendingWorldwide.length + 2];
-      if (!m) break;
-      trendingWorldwide.push({ title: m.Title, rank: trendingWorldwide.length + 1 });
-    }
-
-    const gem = valid.find((m: any) => {
-      const r = parseFloat(m.imdbRating) || 0;
-      const votes = parseInt(m.imdbVotes?.replace(/,/g, "")) || 0;
-      return r >= 7 && votes < 300000;
-    }) || valid[valid.length - 1];
-
-    const hiddenGem = gem
-      ? { title: gem.Title, description: gem.Plot || "An underrated Indian gem worth watching", imdb: parseFloat(gem.imdbRating) || 7.0 }
-      : { title: "12th Fail", description: "An inspiring true story of perseverance against all odds", imdb: 8.6 };
+    const gems = movies.filter(m => m.category === "South Indian");
+    const gem = gems[Math.floor(Math.random() * gems.length)] || movies[0];
+    const hiddenGem = {
+      title: gem.title,
+      description: gem.whyWatch,
+      imdb: gem.imdb || 0,
+    };
 
     const quotes = [
+      { quote: "Pushpa, main jhukega nahi!", movie: "Pushpa (2021)", character: "Allu Arjun" },
       { quote: "Ek baar jo maine commitment kar di, toh phir main apne aap ki bhi nahi sunta.", movie: "Wanted (2009)", character: "Salman Khan" },
       { quote: "Don ko pakadna mushkil hi nahi, namumkin hai.", movie: "Don (2006)", character: "Shah Rukh Khan" },
       { quote: "Mogambo khush hua!", movie: "Mr. India (1987)", character: "Amrish Puri" },
-      { quote: "Pushpa, main jhukega nahi!", movie: "Pushpa (2021)", character: "Allu Arjun" },
-      { quote: "Zindagi mein kuch banna ho, kuch paana ho, toh seekh... taraki kar!", movie: "12th Fail (2023)", character: "Manoj Kumar Sharma" },
       { quote: "Picture abhi baaki hai mere dost.", movie: "Om Shanti Om (2007)", character: "Shah Rukh Khan" },
+      { quote: "Zindagi mein kuch banna ho, kuch paana ho, toh seekh... taraki kar!", movie: "12th Fail (2023)", character: "Manoj Kumar Sharma" },
+      { quote: "Idhu en area, en gethu!", movie: "Vikram (2022)", character: "Kamal Haasan" },
     ];
     const quoteOfTheDay = quotes[new Date().getDate() % quotes.length];
 

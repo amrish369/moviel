@@ -45,119 +45,104 @@ export type TrendingItem = {
 
 export const dailySuggestions: Movie[] = [
   {
-    title: "Pushpa 2: The Rule",
-    year: 2024,
-    genre: "Action / Drama",
-    imdb: 6.3,
-    platform: "Theatrical",
-    language: "Telugu",
-    whyWatch: "Allu Arjun's blockbuster sequel — record-breaking box office in India",
+    title: "Ramayana: The Legend of Prince Rama",
+    year: 2026, genre: "Mythology / Epic", imdb: 0,
+    platform: "Theatrical", language: "Hindi",
+    whyWatch: "Ranbir Kapoor as Lord Ram in Nitesh Tiwari's mega-budget epic — most anticipated Indian film of 2026",
   },
   {
-    title: "Stree 2",
-    year: 2024,
-    genre: "Horror / Comedy",
-    imdb: 7.1,
-    platform: "OTT",
-    language: "Hindi",
-    whyWatch: "India's highest-grossing horror comedy — Rajkummar Rao at his best",
+    title: "War 2",
+    year: 2026, genre: "Action / Thriller", imdb: 0,
+    platform: "Theatrical", language: "Hindi",
+    whyWatch: "Hrithik Roshan vs Jr NTR — the biggest action showdown of 2026",
   },
   {
-    title: "Kalki 2898 AD",
-    year: 2024,
-    genre: "Sci-Fi / Action",
-    imdb: 6.3,
-    platform: "OTT",
-    language: "Telugu",
-    whyWatch: "Prabhas in a futuristic Indian mythology epic with stunning VFX",
+    title: "Pushpa 3: The Rampage",
+    year: 2026, genre: "Action / Drama", imdb: 0,
+    platform: "Theatrical", language: "Telugu",
+    whyWatch: "Allu Arjun's trilogy closer — will Pushpa's empire survive the final battle?",
   },
   {
-    title: "12th Fail",
-    year: 2023,
-    genre: "Drama / Biography",
-    imdb: 8.6,
-    platform: "OTT",
-    language: "Hindi",
-    whyWatch: "One of the highest-rated Indian films ever — an inspiring true story",
+    title: "Coolie",
+    year: 2026, genre: "Action / Thriller", imdb: 0,
+    platform: "Theatrical", language: "Tamil",
+    whyWatch: "Rajinikanth teams up with Lokesh Kanagaraj for the Lokesh Cinematic Universe",
   },
   {
-    title: "Laapataa Ladies",
-    year: 2024,
-    genre: "Comedy / Drama",
-    imdb: 8.2,
-    platform: "OTT",
-    language: "Hindi",
-    whyWatch: "Kiran Rao's heartwarming comedy — India's Oscar entry for 2025",
+    title: "Sikandar",
+    year: 2026, genre: "Action / Drama", imdb: 0,
+    platform: "Theatrical", language: "Hindi",
+    whyWatch: "Salman Khan's Eid blockbuster directed by A.R. Murugadoss",
   },
 ];
 
 export const todayReleases: Release[] = [
-  { title: "Bhool Bhulaiyaa 3", platform: "OTT", language: "Hindi", genre: "Horror / Comedy" },
-  { title: "Singham Again", platform: "OTT", language: "Hindi", genre: "Action / Drama" },
-  { title: "Manjummel Boys", platform: "OTT", language: "Malayalam", genre: "Thriller / Adventure" },
+  { title: "Jolly LLB 3", platform: "Theatrical", language: "Hindi", genre: "Comedy / Drama" },
+  { title: "Toxic", platform: "Theatrical", language: "Kannada", genre: "Action / Thriller" },
+  { title: "KGF Chapter 3", platform: "Theatrical", language: "Kannada", genre: "Action / Drama" },
 ];
 
 export const upcomingMovies: Upcoming[] = [
-  { title: "Ramayana", releaseDate: "2026", hype: "High", category: "Bollywood" },
-  { title: "War 2", releaseDate: "2026", hype: "High", category: "Bollywood" },
-  { title: "Pushpa 3", releaseDate: "2026", hype: "High", category: "South Indian" },
-  { title: "Dhoom 4", releaseDate: "2026", hype: "Medium", category: "Bollywood" },
-  { title: "KGF Chapter 3", releaseDate: "TBA", hype: "High", category: "South Indian" },
-  { title: "Don 3", releaseDate: "TBA", hype: "Medium", category: "Bollywood" },
+  { title: "Ramayana: The Legend of Prince Rama", releaseDate: "Diwali 2026", hype: "High", category: "Bollywood" },
+  { title: "War 2", releaseDate: "August 14, 2026", hype: "High", category: "Bollywood" },
+  { title: "Pushpa 3: The Rampage", releaseDate: "2026", hype: "High", category: "South Indian" },
+  { title: "Dhoom 4", releaseDate: "Christmas 2026", hype: "High", category: "Bollywood" },
+  { title: "KGF Chapter 3", releaseDate: "2026", hype: "High", category: "South Indian" },
+  { title: "Don 3", releaseDate: "2026", hype: "High", category: "Bollywood" },
 ];
 
 export const reviews: Review[] = [
   {
-    title: "Pushpa 2: The Rule",
-    positives: ["Allu Arjun's mass appeal", "High-octane action sequences", "Iconic dialogues"],
-    negatives: ["Lengthy runtime", "Predictable storyline"],
+    title: "Ramayana: The Legend of Prince Rama",
+    positives: ["Ranbir Kapoor as Lord Ram", "Nitesh Tiwari directing", "Massive VFX budget"],
+    negatives: ["Unreleased — final verdict pending", "Sky-high expectations"],
     sentiment: "Good",
     verdict: "Watch",
   },
   {
-    title: "Stree 2",
-    positives: ["Perfect comedy timing", "Great ensemble cast", "Fresh horror elements"],
-    negatives: ["Slightly slow mid-section", "Less scary than expected"],
+    title: "War 2",
+    positives: ["Hrithik vs Jr NTR face-off", "Ayan Mukerji's direction", "Massive buzz & hype"],
+    negatives: ["Unreleased — final verdict pending", "Living up to War 1's standard"],
     sentiment: "Good",
     verdict: "Watch",
   },
   {
-    title: "12th Fail",
-    positives: ["Vikrant Massey's career-best", "Emotionally gripping", "Realistic storytelling"],
-    negatives: ["Slow burn pacing", "Limited action"],
+    title: "Coolie",
+    positives: ["Rajinikanth x Lokesh Kanagaraj", "Part of LCU", "Growing anticipation"],
+    negatives: ["Unreleased — final verdict pending", "High expectations to meet"],
     sentiment: "Good",
     verdict: "Watch",
   },
 ];
 
 export const boxOffice: BoxOffice[] = [
-  { title: "Pushpa 2: The Rule", todayEarnings: "₹15.2 Cr", totalCollection: "₹1,831 Cr (WW)", status: "Blockbuster" },
-  { title: "Stree 2", todayEarnings: "₹5.8 Cr", totalCollection: "₹857 Cr (WW)", status: "Blockbuster" },
-  { title: "Kalki 2898 AD", todayEarnings: "₹4.1 Cr", totalCollection: "₹1,055 Cr (WW)", status: "Blockbuster" },
-  { title: "Jawan", todayEarnings: "₹3.2 Cr", totalCollection: "₹1,148 Cr (WW)", status: "Blockbuster" },
-  { title: "Animal", todayEarnings: "₹2.5 Cr", totalCollection: "₹917 Cr (WW)", status: "Blockbuster" },
+  { title: "Ramayana: The Legend of Prince Rama", todayEarnings: "Unreleased", totalCollection: "TBA", status: "Blockbuster" },
+  { title: "War 2", todayEarnings: "Unreleased", totalCollection: "TBA", status: "Blockbuster" },
+  { title: "Pushpa 3: The Rampage", todayEarnings: "Unreleased", totalCollection: "TBA", status: "Blockbuster" },
+  { title: "KGF Chapter 3", todayEarnings: "Unreleased", totalCollection: "TBA", status: "Blockbuster" },
+  { title: "Sikandar", todayEarnings: "Unreleased", totalCollection: "TBA", status: "Hit" },
 ];
 
 export const trendingWorldwide: TrendingItem[] = [
-  { title: "Pushpa 2: The Rule", rank: 1 },
-  { title: "Stree 2", rank: 2 },
-  { title: "Kalki 2898 AD", rank: 3 },
-  { title: "Jawan", rank: 4 },
-  { title: "RRR", rank: 5 },
+  { title: "Ramayana: The Legend of Prince Rama", rank: 1 },
+  { title: "War 2", rank: 2 },
+  { title: "Pushpa 3: The Rampage", rank: 3 },
+  { title: "KGF Chapter 3", rank: 4 },
+  { title: "Coolie", rank: 5 },
 ];
 
 export const trendingIndia: TrendingItem[] = [
-  { title: "Pushpa 2: The Rule", rank: 1 },
-  { title: "Stree 2", rank: 2 },
-  { title: "Bhool Bhulaiyaa 3", rank: 3 },
-  { title: "Singham Again", rank: 4 },
-  { title: "12th Fail", rank: 5 },
+  { title: "Ramayana: The Legend of Prince Rama", rank: 1 },
+  { title: "Sikandar", rank: 2 },
+  { title: "War 2", rank: 3 },
+  { title: "Jolly LLB 3", rank: 4 },
+  { title: "Dhoom 4", rank: 5 },
 ];
 
 export const hiddenGem = {
-  title: "Manjummel Boys (2024)",
-  description: "A gripping Malayalam survival thriller based on a true incident — edge-of-your-seat tension with outstanding performances. Available on OTT.",
-  imdb: 8.4,
+  title: "Toxic (2026)",
+  description: "Yash's gangster drama — a bold departure from the KGF universe with Nayanthara and Kiara Advani. Available Theatrically.",
+  imdb: 0,
 };
 
 export const quoteOfTheDay = {
