@@ -177,14 +177,41 @@ serve(async (req) => {
     const { category } = await req.json().catch(() => ({}));
     if (!Deno.env.get("TMDB_API_KEY")) throw new Error("TMDB_API_KEY is not configured");
 
-    let titles = RELEASED_TITLES;
-    if (category && category !== "All" && CATEGORY_MAP[category]) titles = CATEGORY_MAP[category];
+    // ── Build dynamic date windows ──
+    const today = new Date();
+    const todayStr = fmtDate(today);
+    const thisMonth = monthBounds(0);
+    const nextMonth = monthBounds(1);
+    const monthAfter = monthBounds(2);
+    // For "released this month" use month start → today
+    const releasedThisMonth = { start: thisMonth.start, end: todayStr };
+    // Last ~90 days for richer "current" pool when month is young
+    const last90 = { start: fmtDate(new Date(today.getTime() - 90 * 86400000)), end: todayStr };
 
-    const shuffled = [...titles].sort(() => Math.random() - 0.5);
-    const selected = shuffled.slice(0, 15);
+    // Category filters
+    const langs = (category && CATEGORY_LANG[category]) || INDIAN_LANGS;
+    const genre = (category && CATEGORY_GENRE[category]) || undefined;
 
-    const movies = await Promise.all(selected.map((t) => fetchFromTMDB(t)));
-    const valid = movies.filter(Boolean);
+    // 1) Daily suggestions: top popular Indian movies released in current month or last 90 days
+    const [thisMonthRaw, last90Raw] = await Promise.all([
+      discoverIndian({ ...releasedThisMonth, langs, genre, minVotes: 1 }),
+      discoverIndian({ ...last90, langs, genre, minVotes: 10 }),
+    ]);
+    const seen = new Set<number>();
+    const merged: any[] = [];
+    for (const m of [...thisMonthRaw, ...last90Raw]) {
+      if (m && !seen.has(m.id)) { seen.add(m.id); merged.push(m); }
+    }
+    // Hydrate top 15 with full detail (revenue/genres/runtime)
+    const hydrated = await Promise.all(merged.slice(0, 15).map((m) => hydrate(m.id)));
+    const valid = hydrated.filter(Boolean);
+
+    // 2) Upcoming: dynamically pull from next 1-2 months
+    const [nextMonthRaw, monthAfterRaw] = await Promise.all([
+      discoverIndian({ start: nextMonth.start, end: nextMonth.end, langs: INDIAN_LANGS, sortBy: "popularity.desc", minVotes: 0 }),
+      discoverIndian({ start: monthAfter.start, end: monthAfter.end, langs: INDIAN_LANGS, sortBy: "popularity.desc", minVotes: 0 }),
+    ]);
+    const upcomingPool = [...nextMonthRaw, ...monthAfterRaw].filter((m, i, a) => a.findIndex(x => x.id === m.id) === i);
 
     const langName = (code: string) => {
       const map: Record<string, string> = { hi: "Hindi", ta: "Tamil", te: "Telugu", ml: "Malayalam", kn: "Kannada", bn: "Bengali", en: "English", mr: "Marathi" };
