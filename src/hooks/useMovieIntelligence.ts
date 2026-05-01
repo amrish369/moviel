@@ -30,6 +30,8 @@ export interface MovieDashboard {
   actorSpotlight: ActorSpotlight[];
   ottThisWeek: OttRelease[];
   thisDayInBollywood: ThisDayFact;
+  currentMonth?: string;
+  nextMonth?: string;
 }
 
 const fallbackData: MovieDashboard = {
@@ -80,6 +82,8 @@ export function useMovieIntelligence() {
         actorSpotlight: result.actorSpotlight?.length ? result.actorSpotlight : fallbackData.actorSpotlight,
         ottThisWeek: result.ottThisWeek?.length ? result.ottThisWeek : fallbackData.ottThisWeek,
         thisDayInBollywood: result.thisDayInBollywood || fallbackData.thisDayInBollywood,
+        currentMonth: result.currentMonth,
+        nextMonth: result.nextMonth,
       });
       setIsLive(true);
     } catch (err) {
