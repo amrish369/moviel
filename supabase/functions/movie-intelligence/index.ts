@@ -7,6 +7,22 @@ const corsHeaders = {
 
 const TMDB_BASE = "https://api.themoviedb.org/3";
 const TMDB_IMG = "https://image.tmdb.org/t/p/w500";
+const INDIAN_LANGS = "hi|ta|te|ml|kn|bn|mr|pa";
+
+function fmtDate(d: Date): string {
+  return d.toISOString().substring(0, 10);
+}
+
+function monthBounds(offsetMonths = 0): { start: string; end: string; label: string } {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth() + offsetMonths, 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + offsetMonths + 1, 0);
+  return {
+    start: fmtDate(start),
+    end: fmtDate(end),
+    label: start.toLocaleString("en-US", { month: "long", year: "numeric" }),
+  };
+}
 
 function tmdbAuth() {
   const key = Deno.env.get("TMDB_API_KEY") || "";
@@ -45,6 +61,46 @@ const CATEGORY_MAP: Record<string, string[]> = {
   Thriller: ["Animal", "12th Fail", "Shaitaan", "Article 370", "Vikram", "Sam Bahadur", "Tumbbad", "Drishyam 2", "Maharaja"],
   Romance: ["Rocky Aur Rani Kii Prem Kahaani", "Dunki"],
 };
+
+const CATEGORY_LANG: Record<string, string> = {
+  Bollywood: "hi",
+  South: "ta|te|ml|kn",
+};
+const CATEGORY_GENRE: Record<string, string> = {
+  Action: "28",
+  Comedy: "35",
+  Thriller: "53",
+  Romance: "10749",
+};
+
+// TMDB discover for Indian movies in a date range
+async function discoverIndian(opts: {
+  start: string; end: string; sortBy?: string; langs?: string; genre?: string; minVotes?: number;
+}): Promise<any[]> {
+  const params: Record<string, string> = {
+    "primary_release_date.gte": opts.start,
+    "primary_release_date.lte": opts.end,
+    "with_original_language": opts.langs || INDIAN_LANGS,
+    "region": "IN",
+    "sort_by": opts.sortBy || "popularity.desc",
+    "include_adult": "false",
+    "vote_count.gte": String(opts.minVotes ?? 5),
+    "page": "1",
+  };
+  if (opts.genre) params.with_genres = opts.genre;
+  try {
+    const data = await tmdbFetch("/discover/movie", params);
+    return data.results || [];
+  } catch (e) {
+    console.error("discoverIndian failed:", e);
+    return [];
+  }
+}
+
+// Hydrate a movie with full details (genres/runtime/revenue)
+async function hydrate(id: number): Promise<any | null> {
+  try { return await tmdbFetch(`/movie/${id}`, {}); } catch { return null; }
+}
 
 const UPCOMING_2026 = [
   { title: "Ramayana: The Legend of Prince Rama", releaseDate: "Diwali 2026", hype: "High", category: "Bollywood" },
