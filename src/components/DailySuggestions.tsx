@@ -4,12 +4,16 @@ import MoviePoster from "./MoviePoster";
 import SectionHeader from "./SectionHeader";
 import type { Movie } from "@/data/movieData";
 
-const DailySuggestions = ({ movies }: { movies: Movie[] }) => {
+const DailySuggestions = ({ movies, monthLabel }: { movies: Movie[]; monthLabel?: string }) => {
   const navigate = useNavigate();
 
   return (
     <section>
-      <SectionHeader icon="🎬" title="Daily Movie Suggestions" subtitle="Top picks for today based on ratings & trends" />
+      <SectionHeader
+        icon="🎬"
+        title={monthLabel ? `Top Picks — ${monthLabel}` : "Daily Movie Suggestions"}
+        subtitle="Indian movies released this month, ranked by popularity"
+      />
       <div className="grid gap-3">
         {movies.map((movie, i) => (
           <div

@@ -8,9 +8,13 @@ const hypeColors = {
   Low: "text-muted-foreground bg-secondary",
 };
 
-const UpcomingMovies = ({ movies }: { movies: Upcoming[] }) => (
+const UpcomingMovies = ({ movies, monthLabel }: { movies: Upcoming[]; monthLabel?: string }) => (
   <section>
-    <SectionHeader icon="📅" title="Upcoming Movies" subtitle="Next 7–14 days" />
+    <SectionHeader
+      icon="📅"
+      title={monthLabel ? `Coming in ${monthLabel}` : "Upcoming Movies"}
+      subtitle="Indian releases scheduled next month"
+    />
     <div className="grid gap-2">
       {movies.map((m) => (
         <div key={m.title} className="glass-card rounded-lg p-3 flex items-center justify-between">

@@ -7,6 +7,22 @@ const corsHeaders = {
 
 const TMDB_BASE = "https://api.themoviedb.org/3";
 const TMDB_IMG = "https://image.tmdb.org/t/p/w500";
+const INDIAN_LANGS = "hi|ta|te|ml|kn|bn|mr|pa";
+
+function fmtDate(d: Date): string {
+  return d.toISOString().substring(0, 10);
+}
+
+function monthBounds(offsetMonths = 0): { start: string; end: string; label: string } {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth() + offsetMonths, 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + offsetMonths + 1, 0);
+  return {
+    start: fmtDate(start),
+    end: fmtDate(end),
+    label: start.toLocaleString("en-US", { month: "long", year: "numeric" }),
+  };
+}
 
 function tmdbAuth() {
   const key = Deno.env.get("TMDB_API_KEY") || "";
@@ -45,6 +61,46 @@ const CATEGORY_MAP: Record<string, string[]> = {
   Thriller: ["Animal", "12th Fail", "Shaitaan", "Article 370", "Vikram", "Sam Bahadur", "Tumbbad", "Drishyam 2", "Maharaja"],
   Romance: ["Rocky Aur Rani Kii Prem Kahaani", "Dunki"],
 };
+
+const CATEGORY_LANG: Record<string, string> = {
+  Bollywood: "hi",
+  South: "ta|te|ml|kn",
+};
+const CATEGORY_GENRE: Record<string, string> = {
+  Action: "28",
+  Comedy: "35",
+  Thriller: "53",
+  Romance: "10749",
+};
+
+// TMDB discover for Indian movies in a date range
+async function discoverIndian(opts: {
+  start: string; end: string; sortBy?: string; langs?: string; genre?: string; minVotes?: number;
+}): Promise<any[]> {
+  const params: Record<string, string> = {
+    "primary_release_date.gte": opts.start,
+    "primary_release_date.lte": opts.end,
+    "with_original_language": opts.langs || INDIAN_LANGS,
+    "region": "IN",
+    "sort_by": opts.sortBy || "popularity.desc",
+    "include_adult": "false",
+    "vote_count.gte": String(opts.minVotes ?? 5),
+    "page": "1",
+  };
+  if (opts.genre) params.with_genres = opts.genre;
+  try {
+    const data = await tmdbFetch("/discover/movie", params);
+    return data.results || [];
+  } catch (e) {
+    console.error("discoverIndian failed:", e);
+    return [];
+  }
+}
+
+// Hydrate a movie with full details (genres/runtime/revenue)
+async function hydrate(id: number): Promise<any | null> {
+  try { return await tmdbFetch(`/movie/${id}`, {}); } catch { return null; }
+}
 
 const UPCOMING_2026 = [
   { title: "Ramayana: The Legend of Prince Rama", releaseDate: "Diwali 2026", hype: "High", category: "Bollywood" },
@@ -121,14 +177,41 @@ serve(async (req) => {
     const { category } = await req.json().catch(() => ({}));
     if (!Deno.env.get("TMDB_API_KEY")) throw new Error("TMDB_API_KEY is not configured");
 
-    let titles = RELEASED_TITLES;
-    if (category && category !== "All" && CATEGORY_MAP[category]) titles = CATEGORY_MAP[category];
+    // ── Build dynamic date windows ──
+    const today = new Date();
+    const todayStr = fmtDate(today);
+    const thisMonth = monthBounds(0);
+    const nextMonth = monthBounds(1);
+    const monthAfter = monthBounds(2);
+    // For "released this month" use month start → today
+    const releasedThisMonth = { start: thisMonth.start, end: todayStr };
+    // Last ~90 days for richer "current" pool when month is young
+    const last90 = { start: fmtDate(new Date(today.getTime() - 90 * 86400000)), end: todayStr };
 
-    const shuffled = [...titles].sort(() => Math.random() - 0.5);
-    const selected = shuffled.slice(0, 15);
+    // Category filters
+    const langs = (category && CATEGORY_LANG[category]) || INDIAN_LANGS;
+    const genre = (category && CATEGORY_GENRE[category]) || undefined;
 
-    const movies = await Promise.all(selected.map((t) => fetchFromTMDB(t)));
-    const valid = movies.filter(Boolean);
+    // 1) Daily suggestions: top popular Indian movies released in current month or last 90 days
+    const [thisMonthRaw, last90Raw] = await Promise.all([
+      discoverIndian({ ...releasedThisMonth, langs, genre, minVotes: 1 }),
+      discoverIndian({ ...last90, langs, genre, minVotes: 10 }),
+    ]);
+    const seen = new Set<number>();
+    const merged: any[] = [];
+    for (const m of [...thisMonthRaw, ...last90Raw]) {
+      if (m && !seen.has(m.id)) { seen.add(m.id); merged.push(m); }
+    }
+    // Hydrate top 15 with full detail (revenue/genres/runtime)
+    const hydrated = await Promise.all(merged.slice(0, 15).map((m) => hydrate(m.id)));
+    const valid = hydrated.filter(Boolean);
+
+    // 2) Upcoming: dynamically pull from next 1-2 months
+    const [nextMonthRaw, monthAfterRaw] = await Promise.all([
+      discoverIndian({ start: nextMonth.start, end: nextMonth.end, langs: INDIAN_LANGS, sortBy: "popularity.desc", minVotes: 0 }),
+      discoverIndian({ start: monthAfter.start, end: monthAfter.end, langs: INDIAN_LANGS, sortBy: "popularity.desc", minVotes: 0 }),
+    ]);
+    const upcomingPool = [...nextMonthRaw, ...monthAfterRaw].filter((m, i, a) => a.findIndex(x => x.id === m.id) === i);
 
     const langName = (code: string) => {
       const map: Record<string, string> = { hi: "Hindi", ta: "Tamil", te: "Telugu", ml: "Malayalam", kn: "Kannada", bn: "Bengali", en: "English", mr: "Marathi" };
@@ -152,9 +235,24 @@ serve(async (req) => {
       genre: (m.genres || []).map((g: any) => g.name).join(", ") || "N/A",
     }));
 
-    const upcomingMovies = UPCOMING_2026.slice(0, 6).map((m) => ({
-      title: m.title, releaseDate: m.releaseDate, hype: m.hype, category: m.category,
-    }));
+    // Dynamic upcoming movies from next 1-2 months
+    const upcomingMovies = upcomingPool.slice(0, 8).map((m: any) => {
+      const lang = m.original_language;
+      const cat = ["ta", "te", "ml", "kn"].includes(lang) ? "South Indian"
+        : lang === "hi" ? "Bollywood" : "Regional";
+      const dateObj = m.release_date ? new Date(m.release_date) : null;
+      const releaseDate = dateObj
+        ? dateObj.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+        : "TBA";
+      const hype = (m.popularity || 0) > 50 ? "High" : (m.popularity || 0) > 15 ? "Medium" : "Low";
+      return { title: m.title, releaseDate, hype, category: cat };
+    });
+    // Fallback to curated 2026 list if discover returned nothing (rare)
+    if (upcomingMovies.length === 0) {
+      upcomingMovies.push(...UPCOMING_2026.slice(0, 6).map((m) => ({
+        title: m.title, releaseDate: m.releaseDate, hype: m.hype, category: m.category,
+      })));
+    }
 
     const reviews = valid.slice(0, 3).map((m: any) => {
       const rating = m.vote_average || 0;
@@ -222,6 +320,8 @@ serve(async (req) => {
       dailySuggestions, todayReleases, upcomingMovies, reviews, boxOffice,
       trendingWorldwide, trendingIndia, hiddenGem, quoteOfTheDay,
       actorSpotlight, ottThisWeek, thisDayInBollywood,
+      currentMonth: thisMonth.label,
+      nextMonth: nextMonth.label,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error) {
     console.error("movie-intelligence error:", error);
