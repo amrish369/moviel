@@ -5,97 +5,109 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+const TMDB_BASE = "https://api.themoviedb.org/3";
+const TMDB_IMG = "https://image.tmdb.org/t/p/w500";
+const TMDB_PROFILE = "https://image.tmdb.org/t/p/w185";
+
+function tmdbAuth() {
+  const key = Deno.env.get("TMDB_API_KEY") || "";
+  if (key.startsWith("eyJ") || key.length > 60) {
+    return { headers: { Authorization: `Bearer ${key}` }, keyParam: "" };
   }
+  return { headers: {}, keyParam: key };
+}
+
+async function tmdbFetch(path: string, query: Record<string, string> = {}) {
+  const auth = tmdbAuth();
+  const params = new URLSearchParams(query);
+  if (auth.keyParam) params.set("api_key", auth.keyParam);
+  const res = await fetch(`${TMDB_BASE}${path}?${params}`, { headers: auth.headers });
+  if (!res.ok) throw new Error(`TMDB ${res.status}`);
+  return res.json();
+}
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const { title } = await req.json();
-    if (!title || typeof title !== "string" || title.trim().length < 1) {
-      return new Response(JSON.stringify({ error: "Movie title is required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    if (!title || typeof title !== "string") {
+      return new Response(JSON.stringify({ error: "Movie title required" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    if (!Deno.env.get("TMDB_API_KEY")) throw new Error("TMDB_API_KEY not configured");
 
-    const OMDB_API_KEY = Deno.env.get("OMDB_API_KEY");
-    if (!OMDB_API_KEY) throw new Error("OMDB_API_KEY is not configured");
+    const search = await tmdbFetch("/search/movie", { query: title.trim(), include_adult: "false" });
+    const first = search.results?.[0];
 
-    // Fetch full movie details from OMDb
-    const params = new URLSearchParams({ apikey: OMDB_API_KEY, t: title.trim(), plot: "full" });
-    const res = await fetch(`https://www.omdbapi.com/?${params}`);
-    const d = await res.json();
-
-    if (d.Response === "False") {
+    if (!first) {
       return new Response(JSON.stringify({
-        fallback: true,
-        message: d.Error || "Movie not found",
-        title: title.trim(),
-        year: new Date().getFullYear(),
-        genre: "Unknown",
-        imdb: 0,
-        language: "Unknown",
-        plot: "Movie not found in database.",
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+        fallback: true, message: "Movie not found", title: title.trim(),
+        year: new Date().getFullYear(), genre: "Unknown", imdb: 0,
+        language: "Unknown", plot: "Movie not found in database.",
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Parse cast into structured format
-    const castList = d.Actors && d.Actors !== "N/A"
-      ? d.Actors.split(", ").map((name: string) => ({
-          name,
-          character: "N/A",
-          photoQuery: `${name} actor headshot`,
-        }))
-      : [];
+    const d = await tmdbFetch(`/movie/${first.id}`, {
+      append_to_response: "credits,external_ids,recommendations",
+    });
 
-    // Parse writers
-    const writersList = d.Writer && d.Writer !== "N/A"
-      ? d.Writer.split(", ").map((w: string) => {
-          const match = w.match(/^(.+?)\s*\((.+?)\)$/);
-          return match
-            ? { name: match[1], role: match[2] }
-            : { name: w, role: "Writer" };
-        })
-      : [];
+    const directorObj = d.credits?.crew?.find((c: any) => c.job === "Director");
+    const writersList = (d.credits?.crew || [])
+      .filter((c: any) => ["Writer", "Screenplay", "Story"].includes(c.job))
+      .map((w: any) => ({ name: w.name, role: w.job }));
+
+    const castList = (d.credits?.cast || []).slice(0, 10).map((c: any) => ({
+      name: c.name,
+      character: c.character || "N/A",
+      photoQuery: `${c.name} actor headshot`,
+      photo: c.profile_path ? `${TMDB_PROFILE}${c.profile_path}` : null,
+    }));
+
+    const dop = d.credits?.crew?.find((c: any) => c.job === "Director of Photography");
+    const composer = d.credits?.crew?.find((c: any) => ["Original Music Composer", "Music"].includes(c.job));
+
+    const similar = (d.recommendations?.results || []).slice(0, 6).map((r: any) => ({
+      title: r.title,
+      year: r.release_date ? parseInt(r.release_date.substring(0, 4)) : 0,
+      poster: r.poster_path ? `${TMDB_IMG}${r.poster_path}` : null,
+      imdb: Math.round((r.vote_average || 0) * 10) / 10,
+    }));
 
     const movieData = {
-      title: d.Title,
-      year: parseInt(d.Year) || 0,
-      genre: d.Genre || "N/A",
-      imdb: parseFloat(d.imdbRating) || 0,
-      runtime: d.Runtime || null,
-      certification: d.Rated || null,
-      language: d.Language || "N/A",
-      country: d.Country || null,
-      tagline: null,
-      plot: d.Plot || null,
-      director: d.Director && d.Director !== "N/A"
-        ? { name: d.Director, knownFor: [] }
-        : null,
+      title: d.title,
+      year: d.release_date ? parseInt(d.release_date.substring(0, 4)) : 0,
+      genre: (d.genres || []).map((g: any) => g.name).join(", ") || "N/A",
+      imdb: Math.round((d.vote_average || 0) * 10) / 10,
+      runtime: d.runtime ? `${d.runtime} min` : null,
+      certification: null,
+      language: d.original_language?.toUpperCase() || "N/A",
+      country: (d.production_countries || []).map((c: any) => c.name).join(", ") || null,
+      tagline: d.tagline || null,
+      plot: d.overview || null,
+      director: directorObj ? { name: directorObj.name, knownFor: [] } : null,
       writers: writersList,
       cast: castList,
-      producers: d.Production && d.Production !== "N/A" ? [d.Production] : [],
-      music: null,
-      cinematography: null,
-      platform: d.Type === "series" ? "Streaming" : "Theatrical",
+      producers: (d.production_companies || []).map((p: any) => p.name),
+      music: composer?.name || null,
+      cinematography: dop?.name || null,
+      platform: "Theatrical",
       boxOffice: {
-        budget: null,
+        budget: d.budget ? `$${d.budget.toLocaleString()}` : null,
         openingDay: null,
         totalIndia: null,
-        totalWorldwide: d.BoxOffice && d.BoxOffice !== "N/A" ? d.BoxOffice : null,
+        totalWorldwide: d.revenue ? `$${d.revenue.toLocaleString()}` : null,
         verdict: null,
       },
       ratings: {
-        imdb: parseFloat(d.imdbRating) || null,
-        rottenTomatoes: d.Ratings?.find((r: any) => r.Source === "Rotten Tomatoes")?.Value || null,
+        imdb: Math.round((d.vote_average || 0) * 10) / 10,
+        rottenTomatoes: null,
         audienceScore: null,
       },
-      trailerQuery: `${d.Title} ${d.Year} official trailer youtube`,
-      poster: d.Poster && d.Poster !== "N/A" ? d.Poster : null,
-      similarMovies: [],
+      trailerQuery: `${d.title} ${d.release_date?.substring(0, 4) || ""} official trailer`,
+      poster: d.poster_path ? `${TMDB_IMG}${d.poster_path}` : null,
+      similarMovies: similar,
     };
 
     return new Response(JSON.stringify(movieData), {
@@ -103,9 +115,8 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error("movie-detail error:", error);
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Unknown" }), {
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
