@@ -235,9 +235,24 @@ serve(async (req) => {
       genre: (m.genres || []).map((g: any) => g.name).join(", ") || "N/A",
     }));
 
-    const upcomingMovies = UPCOMING_2026.slice(0, 6).map((m) => ({
-      title: m.title, releaseDate: m.releaseDate, hype: m.hype, category: m.category,
-    }));
+    // Dynamic upcoming movies from next 1-2 months
+    const upcomingMovies = upcomingPool.slice(0, 8).map((m: any) => {
+      const lang = m.original_language;
+      const cat = ["ta", "te", "ml", "kn"].includes(lang) ? "South Indian"
+        : lang === "hi" ? "Bollywood" : "Regional";
+      const dateObj = m.release_date ? new Date(m.release_date) : null;
+      const releaseDate = dateObj
+        ? dateObj.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+        : "TBA";
+      const hype = (m.popularity || 0) > 50 ? "High" : (m.popularity || 0) > 15 ? "Medium" : "Low";
+      return { title: m.title, releaseDate, hype, category: cat };
+    });
+    // Fallback to curated 2026 list if discover returned nothing (rare)
+    if (upcomingMovies.length === 0) {
+      upcomingMovies.push(...UPCOMING_2026.slice(0, 6).map((m) => ({
+        title: m.title, releaseDate: m.releaseDate, hype: m.hype, category: m.category,
+      })));
+    }
 
     const reviews = valid.slice(0, 3).map((m: any) => {
       const rating = m.vote_average || 0;
@@ -305,6 +320,8 @@ serve(async (req) => {
       dailySuggestions, todayReleases, upcomingMovies, reviews, boxOffice,
       trendingWorldwide, trendingIndia, hiddenGem, quoteOfTheDay,
       actorSpotlight, ottThisWeek, thisDayInBollywood,
+      currentMonth: thisMonth.label,
+      nextMonth: nextMonth.label,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error) {
     console.error("movie-intelligence error:", error);
