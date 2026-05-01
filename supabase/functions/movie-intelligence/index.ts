@@ -5,44 +5,62 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// ── Released Indian Movies (for Daily Suggestions, Reviews, Box Office) ──
+const TMDB_BASE = "https://api.themoviedb.org/3";
+const TMDB_IMG = "https://image.tmdb.org/t/p/w500";
+
+function tmdbAuth() {
+  const key = Deno.env.get("TMDB_API_KEY") || "";
+  if (key.startsWith("eyJ") || key.length > 60) {
+    return { headers: { Authorization: `Bearer ${key}` }, keyParam: "" };
+  }
+  return { headers: {}, keyParam: key };
+}
+
+async function tmdbFetch(path: string, query: Record<string, string> = {}) {
+  const auth = tmdbAuth();
+  const params = new URLSearchParams(query);
+  if (auth.keyParam) params.set("api_key", auth.keyParam);
+  const res = await fetch(`${TMDB_BASE}${path}?${params}`, { headers: auth.headers });
+  if (!res.ok) throw new Error(`TMDB ${res.status}`);
+  return res.json();
+}
+
+// Curated released Indian titles (TMDB has good coverage)
 const RELEASED_TITLES = [
-  "Pushpa 2", "Stree 2", "Animal", "Jawan", "Pathaan", "Dunki",
+  "Pushpa 2: The Rule", "Stree 2", "Animal", "Jawan", "Pathaan", "Dunki",
   "Fighter", "Crew", "Bhool Bhulaiyaa 3", "Singham Again",
-  "Salaar", "Kalki 2898 AD", "Devara", "Vidaamuyarchi",
-  "Kantara", "RRR", "KGF Chapter 2", "Vikram", "Ponniyin Selvan",
+  "Salaar: Part 1 - Ceasefire", "Kalki 2898 AD", "Devara: Part 1",
+  "Kantara", "RRR", "K.G.F: Chapter 2", "Vikram", "Ponniyin Selvan: I",
   "Jailer", "Leo", "12th Fail", "Sam Bahadur", "Laapataa Ladies",
   "Shaitaan", "Article 370", "Manjummel Boys", "Aavesham",
-  "Hanuman", "Gadar 2", "OMG 2", "Rocky Aur Rani Kii Prem Kahaani",
-  "Tumbbad", "Drishyam 2", "Jai Bhim", "Maharaja", "Amaran",
+  "Hanu-Man", "Gadar 2", "OMG 2", "Rocky Aur Rani Kii Prem Kahaani",
+  "Tumbbad", "Drishyam 2", "Maharaja", "Amaran",
 ];
 
 const CATEGORY_MAP: Record<string, string[]> = {
   Bollywood: ["Animal", "Jawan", "Pathaan", "Dunki", "Fighter", "Crew", "Stree 2", "Bhool Bhulaiyaa 3", "Singham Again", "12th Fail", "Sam Bahadur", "Laapataa Ladies", "Shaitaan", "Article 370", "Gadar 2", "OMG 2", "Rocky Aur Rani Kii Prem Kahaani", "Drishyam 2"],
-  South: ["Pushpa 2", "Salaar", "Kalki 2898 AD", "Devara", "RRR", "KGF Chapter 2", "Vikram", "Ponniyin Selvan", "Jailer", "Leo", "Kantara", "Manjummel Boys", "Aavesham", "Hanuman", "Vidaamuyarchi", "Tumbbad", "Jai Bhim", "Maharaja", "Amaran"],
-  Action: ["Animal", "Jawan", "Pathaan", "Fighter", "Pushpa 2", "Salaar", "KGF Chapter 2", "Singham Again", "Devara", "Kalki 2898 AD", "RRR"],
+  South: ["Pushpa 2: The Rule", "Salaar: Part 1 - Ceasefire", "Kalki 2898 AD", "Devara: Part 1", "RRR", "K.G.F: Chapter 2", "Vikram", "Ponniyin Selvan: I", "Jailer", "Leo", "Kantara", "Manjummel Boys", "Aavesham", "Hanu-Man", "Tumbbad", "Maharaja", "Amaran"],
+  Action: ["Animal", "Jawan", "Pathaan", "Fighter", "Pushpa 2: The Rule", "Salaar: Part 1 - Ceasefire", "K.G.F: Chapter 2", "Singham Again", "Devara: Part 1", "Kalki 2898 AD", "RRR"],
   Comedy: ["Stree 2", "Crew", "Bhool Bhulaiyaa 3", "Laapataa Ladies", "OMG 2", "Aavesham", "Rocky Aur Rani Kii Prem Kahaani"],
   Thriller: ["Animal", "12th Fail", "Shaitaan", "Article 370", "Vikram", "Sam Bahadur", "Tumbbad", "Drishyam 2", "Maharaja"],
   Romance: ["Rocky Aur Rani Kii Prem Kahaani", "Dunki"],
 };
 
-// ── Upcoming 2026 Indian Movies ──
 const UPCOMING_2026 = [
-  { title: "Ramayana: The Legend of Prince Rama", releaseDate: "Diwali 2026", hype: "High", category: "Bollywood", cast: "Ranbir Kapoor, Sai Pallavi, Yash", director: "Nitesh Tiwari" },
-  { title: "War 2", releaseDate: "August 14, 2026", hype: "High", category: "Bollywood", cast: "Hrithik Roshan, Jr NTR, Kiara Advani", director: "Ayan Mukerji" },
-  { title: "Pushpa 3: The Rampage", releaseDate: "2026", hype: "High", category: "South Indian", cast: "Allu Arjun, Rashmika Mandanna, Fahadh Faasil", director: "Sukumar" },
-  { title: "Dhoom 4", releaseDate: "Christmas 2026", hype: "High", category: "Bollywood", cast: "Ranbir Kapoor, Ranveer Singh", director: "Aditya Chopra" },
-  { title: "KGF Chapter 3", releaseDate: "2026", hype: "High", category: "South Indian", cast: "Yash, Raveena Tandon", director: "Prashanth Neel" },
-  { title: "Don 3", releaseDate: "2026", hype: "High", category: "Bollywood", cast: "Ranveer Singh, Kiara Advani", director: "Farhan Akhtar" },
-  { title: "Sikandar", releaseDate: "Eid 2026", hype: "High", category: "Bollywood", cast: "Salman Khan, Rashmika Mandanna", director: "A.R. Murugadoss" },
-  { title: "Coolie", releaseDate: "2026", hype: "High", category: "South Indian", cast: "Rajinikanth, Shruti Haasan", director: "Lokesh Kanagaraj" },
-  { title: "Jolly LLB 3", releaseDate: "April 10, 2026", hype: "High", category: "Bollywood", cast: "Akshay Kumar, Arshad Warsi", director: "Subhash Kapoor" },
-  { title: "Toxic", releaseDate: "April 2026", hype: "High", category: "South Indian", cast: "Yash, Nayanthara, Kiara Advani", director: "Geetu Mohandas" },
-  { title: "Spirit", releaseDate: "2026", hype: "High", category: "South Indian", cast: "Prabhas", director: "Sandeep Reddy Vanga" },
-  { title: "Baaghi 4", releaseDate: "September 5, 2026", hype: "Medium", category: "Bollywood", cast: "Tiger Shroff, Sanjay Dutt", director: "A. Harsha" },
+  { title: "Ramayana: The Legend of Prince Rama", releaseDate: "Diwali 2026", hype: "High", category: "Bollywood" },
+  { title: "War 2", releaseDate: "August 14, 2026", hype: "High", category: "Bollywood" },
+  { title: "Pushpa 3: The Rampage", releaseDate: "2026", hype: "High", category: "South Indian" },
+  { title: "Dhoom 4", releaseDate: "Christmas 2026", hype: "High", category: "Bollywood" },
+  { title: "KGF Chapter 3", releaseDate: "2026", hype: "High", category: "South Indian" },
+  { title: "Don 3", releaseDate: "2026", hype: "High", category: "Bollywood" },
+  { title: "Sikandar", releaseDate: "Eid 2026", hype: "High", category: "Bollywood" },
+  { title: "Coolie", releaseDate: "2026", hype: "High", category: "South Indian" },
+  { title: "Jolly LLB 3", releaseDate: "April 10, 2026", hype: "High", category: "Bollywood" },
+  { title: "Toxic", releaseDate: "April 2026", hype: "High", category: "South Indian" },
+  { title: "Spirit", releaseDate: "2026", hype: "High", category: "South Indian" },
+  { title: "Baaghi 4", releaseDate: "September 5, 2026", hype: "Medium", category: "Bollywood" },
 ];
 
-// ── Actor Spotlight Data ──
 const ACTOR_SPOTLIGHTS = [
   { name: "Allu Arjun", knownFor: "Pushpa franchise", upcomingCount: 1, image: "🌟", fact: "National Award winner for Pushpa: The Rise — first Telugu actor in 39 years" },
   { name: "Ranbir Kapoor", knownFor: "Animal, Brahmastra", upcomingCount: 2, image: "🎭", fact: "Starring in both Ramayana & Dhoom 4 in 2026 — his biggest year yet" },
@@ -53,7 +71,6 @@ const ACTOR_SPOTLIGHTS = [
   { name: "Prabhas", knownFor: "Baahubali, Kalki 2898 AD", upcomingCount: 1, image: "🔥", fact: "Spirit reunites him with Sandeep Reddy Vanga for a dark thriller" },
 ];
 
-// ── OTT This Week ──
 const OTT_RELEASES = [
   { title: "Pushpa 2: The Rule", platform: "Netflix", language: "Telugu/Hindi", date: "Streaming Now" },
   { title: "Stree 2", platform: "Prime Video", language: "Hindi", date: "Streaming Now" },
@@ -65,8 +82,7 @@ const OTT_RELEASES = [
   { title: "Laapataa Ladies", platform: "Netflix", language: "Hindi", date: "Streaming Now" },
 ];
 
-// ── This Day in Bollywood ──
-function getThisDayFact(): { year: number; event: string; trivia: string } {
+function getThisDayFact() {
   const facts = [
     { year: 2001, event: "Lagaan released and went on to get an Oscar nomination", trivia: "It was only the 3rd Indian film to be nominated for Best Foreign Language Film" },
     { year: 1973, event: "Zanjeer released, making Amitabh Bachchan the Angry Young Man", trivia: "The film was rejected by every major star before Big B accepted it" },
@@ -84,78 +100,70 @@ function getThisDayFact(): { year: number; event: string; trivia: string } {
   return facts[new Date().getDate() % facts.length];
 }
 
-async function fetchFromOMDb(apiKey: string, title: string): Promise<any | null> {
+async function fetchFromTMDB(title: string): Promise<any | null> {
   try {
-    const params = new URLSearchParams({ apikey: apiKey, t: title, plot: "short" });
-    const res = await fetch(`https://www.omdbapi.com/?${params}`);
-    const data = await res.json();
-    return data.Response === "True" ? data : null;
-  } catch {
+    const data = await tmdbFetch("/search/movie", { query: title, include_adult: "false" });
+    const first = data.results?.[0];
+    if (!first) return null;
+    // Hydrate with details (genres + runtime)
+    const detail = await tmdbFetch(`/movie/${first.id}`, {});
+    return detail;
+  } catch (e) {
+    console.error(`TMDB fetch failed for ${title}:`, e);
     return null;
   }
 }
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const { category } = await req.json().catch(() => ({}));
+    if (!Deno.env.get("TMDB_API_KEY")) throw new Error("TMDB_API_KEY is not configured");
 
-    const OMDB_API_KEY = Deno.env.get("OMDB_API_KEY");
-    if (!OMDB_API_KEY) throw new Error("OMDB_API_KEY is not configured");
-
-    // Select titles based on category
     let titles = RELEASED_TITLES;
-    if (category && category !== "All" && CATEGORY_MAP[category]) {
-      titles = CATEGORY_MAP[category];
-    }
+    if (category && category !== "All" && CATEGORY_MAP[category]) titles = CATEGORY_MAP[category];
 
-    // Shuffle and pick 15
     const shuffled = [...titles].sort(() => Math.random() - 0.5);
     const selected = shuffled.slice(0, 15);
 
-    // Fetch real data from OMDb
-    const movies = await Promise.all(selected.map((t) => fetchFromOMDb(OMDB_API_KEY, t)));
+    const movies = await Promise.all(selected.map((t) => fetchFromTMDB(t)));
     const valid = movies.filter(Boolean);
 
-    // Daily Suggestions — RELEASED movies only
+    const langName = (code: string) => {
+      const map: Record<string, string> = { hi: "Hindi", ta: "Tamil", te: "Telugu", ml: "Malayalam", kn: "Kannada", bn: "Bengali", en: "English", mr: "Marathi" };
+      return map[code] || code?.toUpperCase() || "Hindi";
+    };
+
     const dailySuggestions = valid.slice(0, 5).map((m: any) => ({
-      title: m.Title,
-      year: parseInt(m.Year) || 2024,
-      genre: m.Genre || "N/A",
-      imdb: parseFloat(m.imdbRating) || 0,
-      platform: m.Type === "series" ? "OTT" : "Theatrical",
-      language: m.Language?.split(",")?.[0]?.trim() || "Hindi",
-      whyWatch: m.Plot && m.Plot !== "N/A" ? m.Plot.substring(0, 120) : "A must-watch Indian film",
-    }));
-
-    // Today's OTT Releases
-    const todayReleases = valid.slice(5, 8).map((m: any) => ({
-      title: m.Title,
-      platform: m.Type === "series" ? "OTT" : "Theatrical",
-      language: m.Language?.split(",")?.[0]?.trim() || "Hindi",
-      genre: m.Genre || "N/A",
-    }));
-
-    // Upcoming 2026 movies
-    const upcomingMovies = UPCOMING_2026.slice(0, 6).map((m) => ({
       title: m.title,
-      releaseDate: m.releaseDate,
-      hype: m.hype,
-      category: m.category,
+      year: m.release_date ? parseInt(m.release_date.substring(0, 4)) : 2024,
+      genre: (m.genres || []).map((g: any) => g.name).join(", ") || "N/A",
+      imdb: Math.round((m.vote_average || 0) * 10) / 10,
+      platform: "Theatrical",
+      language: langName(m.original_language),
+      whyWatch: m.tagline || (m.overview ? m.overview.substring(0, 120) : "A must-watch Indian film"),
     }));
 
-    // Reviews from real OMDb data
+    const todayReleases = valid.slice(5, 8).map((m: any) => ({
+      title: m.title,
+      platform: "OTT/Theatrical",
+      language: langName(m.original_language),
+      genre: (m.genres || []).map((g: any) => g.name).join(", ") || "N/A",
+    }));
+
+    const upcomingMovies = UPCOMING_2026.slice(0, 6).map((m) => ({
+      title: m.title, releaseDate: m.releaseDate, hype: m.hype, category: m.category,
+    }));
+
     const reviews = valid.slice(0, 3).map((m: any) => {
-      const rating = parseFloat(m.imdbRating) || 0;
+      const rating = m.vote_average || 0;
       return {
-        title: m.Title,
+        title: m.title,
         positives: [
-          m.Actors ? `Stellar cast: ${m.Actors.split(",")[0]}` : "Great performances",
-          m.Director && m.Director !== "N/A" ? `Directed by ${m.Director}` : "Well directed",
+          m.tagline ? `"${m.tagline}"` : "Great performances",
           rating >= 7 ? "Critically acclaimed" : "Mass entertainer",
+          (m.genres?.[0]?.name) ? `Strong ${m.genres[0].name.toLowerCase()} elements` : "Engaging storyline",
         ],
         negatives: [
           rating < 7 ? "Pacing issues in second half" : "High expectations to match",
@@ -166,51 +174,35 @@ serve(async (req) => {
       };
     });
 
-    // Box Office from real data
     const boxOffice = valid
-      .filter((m: any) => m.BoxOffice && m.BoxOffice !== "N/A")
+      .filter((m: any) => m.revenue && m.revenue > 0)
       .slice(0, 5)
       .map((m: any) => {
-        const rating = parseFloat(m.imdbRating) || 0;
+        const rating = m.vote_average || 0;
         return {
-          title: m.Title,
+          title: m.title,
           todayEarnings: "N/A",
-          totalCollection: m.BoxOffice,
+          totalCollection: `$${(m.revenue / 1_000_000).toFixed(1)}M`,
           status: rating >= 8 ? "Blockbuster" : rating >= 7 ? "Hit" : rating >= 5.5 ? "Average" : "Flop",
         };
       });
 
-    while (boxOffice.length < 3) {
+    while (boxOffice.length < 3 && valid[boxOffice.length]) {
       const m = valid[boxOffice.length];
-      if (!m) break;
       boxOffice.push({
-        title: m.Title,
-        todayEarnings: "N/A",
-        totalCollection: "N/A",
-        status: parseFloat(m.imdbRating) >= 7 ? "Hit" : "Average",
+        title: m.title, todayEarnings: "N/A", totalCollection: "N/A",
+        status: (m.vote_average || 0) >= 7 ? "Hit" : "Average",
       });
     }
 
-    // Trending
-    const trendingIndia = valid.slice(0, 5).map((m: any, i: number) => ({
-      title: m.Title, rank: i + 1,
-    }));
-    const trendingWorldwide = valid.slice(2, 7).map((m: any, i: number) => ({
-      title: m.Title, rank: i + 1,
-    }));
+    const trendingIndia = valid.slice(0, 5).map((m: any, i: number) => ({ title: m.title, rank: i + 1 }));
+    const trendingWorldwide = valid.slice(2, 7).map((m: any, i: number) => ({ title: m.title, rank: i + 1 }));
 
-    // Hidden Gem
-    const gem = valid.find((m: any) => {
-      const r = parseFloat(m.imdbRating) || 0;
-      const votes = parseInt(m.imdbVotes?.replace(/,/g, "")) || 0;
-      return r >= 7 && votes < 300000;
-    }) || valid[valid.length - 1];
-
+    const gem = valid.find((m: any) => (m.vote_average || 0) >= 7 && (m.vote_count || 0) < 2000) || valid[valid.length - 1];
     const hiddenGem = gem
-      ? { title: gem.Title, description: gem.Plot || "An underrated Indian gem worth watching", imdb: parseFloat(gem.imdbRating) || 7.0 }
-      : { title: "Tumbbad", description: "A visual masterpiece blending mythology and horror — one of India's finest films ever made", imdb: 8.3 };
+      ? { title: gem.title, description: gem.overview || "An underrated Indian gem worth watching", imdb: Math.round((gem.vote_average || 7) * 10) / 10 }
+      : { title: "Tumbbad", description: "A visual masterpiece blending mythology and horror", imdb: 8.3 };
 
-    // Quotes
     const quotes = [
       { quote: "Ek baar jo maine commitment kar di, toh phir main apne aap ki bhi nahi sunta.", movie: "Wanted (2009)", character: "Salman Khan" },
       { quote: "Don ko pakadna mushkil hi nahi, namumkin hai.", movie: "Don (2006)", character: "Shah Rukh Khan" },
@@ -222,37 +214,19 @@ serve(async (req) => {
     ];
     const quoteOfTheDay = quotes[new Date().getDate() % quotes.length];
 
-    // Actor Spotlight — pick 3 random
-    const spotlightShuffled = [...ACTOR_SPOTLIGHTS].sort(() => Math.random() - 0.5);
-    const actorSpotlight = spotlightShuffled.slice(0, 3);
-
-    // OTT This Week — pick 5
+    const actorSpotlight = [...ACTOR_SPOTLIGHTS].sort(() => Math.random() - 0.5).slice(0, 3);
     const ottThisWeek = OTT_RELEASES.slice(0, 5);
-
-    // This Day in Bollywood
     const thisDayInBollywood = getThisDayFact();
 
     return new Response(JSON.stringify({
-      dailySuggestions,
-      todayReleases,
-      upcomingMovies,
-      reviews,
-      boxOffice,
-      trendingWorldwide,
-      trendingIndia,
-      hiddenGem,
-      quoteOfTheDay,
-      actorSpotlight,
-      ottThisWeek,
-      thisDayInBollywood,
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+      dailySuggestions, todayReleases, upcomingMovies, reviews, boxOffice,
+      trendingWorldwide, trendingIndia, hiddenGem, quoteOfTheDay,
+      actorSpotlight, ottThisWeek, thisDayInBollywood,
+    }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error) {
     console.error("movie-intelligence error:", error);
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Unknown" }), {
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
