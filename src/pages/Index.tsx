@@ -234,11 +234,11 @@ const Index = () => {
         {/* Full Dashboard */}
         {!showSearchResults && (
           <>
-            <DailySuggestions movies={data.dailySuggestions} />
+            <DailySuggestions movies={data.dailySuggestions} monthLabel={data.currentMonth} />
             <OttThisWeek releases={data.ottThisWeek} />
             <TodayReleases releases={data.todayReleases} />
             <ThisDayInBollywood fact={data.thisDayInBollywood} />
-            <UpcomingMovies movies={data.upcomingMovies} />
+            <UpcomingMovies movies={data.upcomingMovies} monthLabel={data.nextMonth} />
             <ActorSpotlightSection actors={data.actorSpotlight} />
             <SmartReviews reviews={data.reviews} />
             <BoxOfficeSection data={data.boxOffice} />
