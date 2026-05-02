@@ -13,6 +13,7 @@ import BonusSection from "@/components/BonusSection";
 import ActorSpotlightSection from "@/components/ActorSpotlight";
 import OttThisWeek from "@/components/OttThisWeek";
 import ThisDayInBollywood from "@/components/ThisDayInBollywood";
+import MonthlyCalendar from "@/components/MonthlyCalendar";
 import { useMovieIntelligence } from "@/hooks/useMovieIntelligence";
 import { useMovieSearch, SearchResult } from "@/hooks/useMovieSearch";
 
@@ -239,6 +240,7 @@ const Index = () => {
             <TodayReleases releases={data.todayReleases} />
             <ThisDayInBollywood fact={data.thisDayInBollywood} />
             <UpcomingMovies movies={data.upcomingMovies} monthLabel={data.nextMonth} />
+            <MonthlyCalendar />
             <ActorSpotlightSection actors={data.actorSpotlight} />
             <SmartReviews reviews={data.reviews} />
             <BoxOfficeSection data={data.boxOffice} />
