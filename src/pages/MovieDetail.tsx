@@ -194,15 +194,19 @@ const MovieDetailPage = () => {
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {movie.cast.map((actor, i) => (
-                <div key={i} className="glass-card rounded-lg p-3 text-center space-y-2">
+                <button
+                  key={i}
+                  onClick={() => navigate(`/actor?name=${encodeURIComponent(actor.name)}`)}
+                  className="glass-card rounded-lg p-3 text-center space-y-2 hover:border-primary/30 transition-all w-full active:scale-[0.98]"
+                >
                   <div className="w-14 h-14 mx-auto rounded-full bg-secondary flex items-center justify-center">
                     <User className="w-7 h-7 text-muted-foreground" />
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-foreground truncate">{actor.name}</p>
+                    <p className="text-xs font-medium text-foreground truncate hover:text-primary">{actor.name}</p>
                     <p className="text-[10px] text-muted-foreground truncate">as {actor.character}</p>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           </section>
