@@ -11,9 +11,10 @@ const ActorSpotlightSection = ({ actors }: { actors: ActorSpotlightType[] }) => 
       <SectionHeader icon="🌟" title="Actor Spotlight" subtitle="Stars to watch in 2026" />
       <div className="grid gap-3">
         {actors.map((actor) => (
-          <div
+          <button
             key={actor.name}
-            className="glass-card rounded-lg p-4 hover:border-primary/30 transition-all group"
+            onClick={() => navigate(`/actor?name=${encodeURIComponent(actor.name)}`)}
+            className="glass-card rounded-lg p-4 hover:border-primary/30 transition-all group text-left w-full active:scale-[0.99]"
           >
             <div className="flex items-start gap-3">
               <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-2xl shrink-0">
@@ -21,7 +22,10 @@ const ActorSpotlightSection = ({ actors }: { actors: ActorSpotlightType[] }) => 
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-display font-semibold text-foreground">{actor.name}</h3>
+                  <h3 className="font-display font-semibold text-foreground group-hover:text-primary transition-colors flex items-center gap-1">
+                    {actor.name}
+                    <ChevronRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </h3>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
                     {actor.upcomingCount} Upcoming
                   </span>
@@ -33,7 +37,7 @@ const ActorSpotlightSection = ({ actors }: { actors: ActorSpotlightType[] }) => 
                 <p className="text-xs text-primary/80 mt-1 italic">💡 {actor.fact}</p>
               </div>
             </div>
-          </div>
+          </button>
         ))}
       </div>
     </section>
