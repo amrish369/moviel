@@ -65,28 +65,31 @@ const CATEGORY_MAP: Record<string, string[]> = {
 const CATEGORY_LANG: Record<string, string> = {
   Bollywood: "hi",
   South: "ta|te|ml|kn",
+  Hollywood: "en",
+  "Web Series": "hi|ta|te|ml|kn|bn|en",
 };
-const CATEGORY_GENRE: Record<string, string> = {
+const MOOD_GENRE: Record<string, string> = {
   Action: "28",
   Comedy: "35",
   Thriller: "53",
   Romance: "10749",
+  Emotional: "18",
 };
 
 // TMDB discover for Indian movies in a date range
 async function discoverIndian(opts: {
-  start: string; end: string; sortBy?: string; langs?: string; genre?: string; minVotes?: number;
+  start: string; end: string; sortBy?: string; langs?: string; genre?: string; minVotes?: number; region?: string;
 }): Promise<any[]> {
   const params: Record<string, string> = {
     "primary_release_date.gte": opts.start,
     "primary_release_date.lte": opts.end,
     "with_original_language": opts.langs || INDIAN_LANGS,
-    "region": "IN",
     "sort_by": opts.sortBy || "popularity.desc",
     "include_adult": "false",
     "vote_count.gte": String(opts.minVotes ?? 5),
     "page": "1",
   };
+  if (opts.region) params.region = opts.region;
   if (opts.genre) params.with_genres = opts.genre;
   try {
     const data = await tmdbFetch("/discover/movie", params);
@@ -174,7 +177,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { category } = await req.json().catch(() => ({}));
+    const { category, mood } = await req.json().catch(() => ({}));
     if (!Deno.env.get("TMDB_API_KEY")) throw new Error("TMDB_API_KEY is not configured");
 
     // ── Build dynamic date windows ──
@@ -188,14 +191,17 @@ serve(async (req) => {
     // Last ~90 days for richer "current" pool when month is young
     const last90 = { start: fmtDate(new Date(today.getTime() - 90 * 86400000)), end: todayStr };
 
-    // Category filters
-    const langs = (category && CATEGORY_LANG[category]) || INDIAN_LANGS;
-    const genre = (category && CATEGORY_GENRE[category]) || undefined;
+    // Category → language; Mood → genre
+    const cat = category && category !== "All" ? category : null;
+    const md = mood && mood !== "Mixed" ? mood : null;
+    const langs = (cat && CATEGORY_LANG[cat]) || INDIAN_LANGS;
+    const genre = (md && MOOD_GENRE[md]) || undefined;
+    const region = cat === "Hollywood" ? "US" : "IN";
 
     // 1) Daily suggestions: top popular Indian movies released in current month or last 90 days
     const [thisMonthRaw, last90Raw] = await Promise.all([
-      discoverIndian({ ...releasedThisMonth, langs, genre, minVotes: 1 }),
-      discoverIndian({ ...last90, langs, genre, minVotes: 10 }),
+      discoverIndian({ ...releasedThisMonth, langs, genre, region, minVotes: 1 }),
+      discoverIndian({ ...last90, langs, genre, region, minVotes: 10 }),
     ]);
     const seen = new Set<number>();
     const merged: any[] = [];
@@ -208,8 +214,8 @@ serve(async (req) => {
 
     // 2) Upcoming: dynamically pull from next 1-2 months
     const [nextMonthRaw, monthAfterRaw] = await Promise.all([
-      discoverIndian({ start: nextMonth.start, end: nextMonth.end, langs: INDIAN_LANGS, sortBy: "popularity.desc", minVotes: 0 }),
-      discoverIndian({ start: monthAfter.start, end: monthAfter.end, langs: INDIAN_LANGS, sortBy: "popularity.desc", minVotes: 0 }),
+      discoverIndian({ start: nextMonth.start, end: nextMonth.end, langs, genre, region, sortBy: "popularity.desc", minVotes: 0 }),
+      discoverIndian({ start: monthAfter.start, end: monthAfter.end, langs, genre, region, sortBy: "popularity.desc", minVotes: 0 }),
     ]);
     const upcomingPool = [...nextMonthRaw, ...monthAfterRaw].filter((m, i, a) => a.findIndex(x => x.id === m.id) === i);
 
