@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Film, Clapperboard, Wifi, WifiOff, Loader2, Search, Star, X, Send } from "lucide-react";
+import { Film, Clapperboard, Wifi, WifiOff, Loader2, Search, Star, X, Send, Menu, Sparkles, Tv, CalendarDays, History, Rocket, CalendarRange, Users, MessageSquare, TrendingUp, Globe2, Gem } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import MoviePoster from "@/components/MoviePoster";
 import FilterBar from "@/components/FilterBar";
 import DailySuggestions from "@/components/DailySuggestions";
@@ -123,12 +124,64 @@ const Index = () => {
   const today = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
   const showSearchResults = searchQuery.trim().length >= 2;
 
+  const sections = [
+    { id: "daily-suggestions", label: "Daily Suggestions", icon: Sparkles },
+    { id: "ott-this-week", label: "OTT This Week", icon: Tv },
+    { id: "today-releases", label: "Today's Releases", icon: CalendarDays },
+    { id: "this-day-bollywood", label: "This Day in Bollywood", icon: History },
+    { id: "upcoming-movies", label: "Upcoming Movies", icon: Rocket },
+    { id: "monthly-calendar", label: "Monthly Calendar", icon: CalendarRange },
+    { id: "actor-spotlight", label: "Actor Spotlight", icon: Users },
+    { id: "smart-reviews", label: "Smart Reviews", icon: MessageSquare },
+    { id: "box-office", label: "Box Office", icon: TrendingUp },
+    { id: "trending", label: "Trending", icon: Globe2 },
+    { id: "bonus", label: "Hidden Gem & Quote", icon: Gem },
+  ];
+
+  const scrollToSection = (id: string) => {
+    setTimeout(() => {
+      const el = document.getElementById(id);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border sticky top-0 z-50 bg-background/80 backdrop-blur-xl">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
+            <Sheet>
+              <SheetTrigger asChild>
+                <button
+                  aria-label="Open menu"
+                  className="w-9 h-9 rounded-lg bg-secondary/60 hover:bg-secondary flex items-center justify-center transition-colors"
+                >
+                  <Menu className="w-5 h-5 text-foreground" />
+                </button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[280px] p-0 flex flex-col">
+                <SheetHeader className="p-4 border-b border-border">
+                  <SheetTitle className="text-gradient-gold font-display">Sections</SheetTitle>
+                </SheetHeader>
+                <nav className="flex-1 overflow-y-auto p-2">
+                  {sections.map((s) => (
+                    <SheetClose asChild key={s.id}>
+                      <button
+                        onClick={() => {
+                          if (showSearchResults) handleClearSearch();
+                          scrollToSection(s.id);
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-foreground hover:bg-secondary/70 hover:text-primary transition-colors text-left"
+                      >
+                        <s.icon className="w-4 h-4 text-primary" />
+                        <span>{s.label}</span>
+                      </button>
+                    </SheetClose>
+                  ))}
+                </nav>
+              </SheetContent>
+            </Sheet>
             <div className="w-9 h-9 rounded-lg bg-primary/15 flex items-center justify-center glow-gold">
               <Clapperboard className="w-5 h-5 text-primary" />
             </div>
@@ -235,17 +288,17 @@ const Index = () => {
         {/* Full Dashboard */}
         {!showSearchResults && (
           <>
-            <DailySuggestions movies={data.dailySuggestions} monthLabel={data.currentMonth} />
-            <OttThisWeek releases={data.ottThisWeek} />
-            <TodayReleases releases={data.todayReleases} />
-            <ThisDayInBollywood fact={data.thisDayInBollywood} />
-            <UpcomingMovies movies={data.upcomingMovies} monthLabel={data.nextMonth} />
-            <MonthlyCalendar />
-            <ActorSpotlightSection actors={data.actorSpotlight} />
-            <SmartReviews reviews={data.reviews} />
-            <BoxOfficeSection data={data.boxOffice} />
-            <TrendingSection worldwide={data.trendingWorldwide} india={data.trendingIndia} />
-            <BonusSection hiddenGem={data.hiddenGem} quote={data.quoteOfTheDay} />
+            <section id="daily-suggestions" className="scroll-mt-24"><DailySuggestions movies={data.dailySuggestions} monthLabel={data.currentMonth} /></section>
+            <section id="ott-this-week" className="scroll-mt-24"><OttThisWeek releases={data.ottThisWeek} /></section>
+            <section id="today-releases" className="scroll-mt-24"><TodayReleases releases={data.todayReleases} /></section>
+            <section id="this-day-bollywood" className="scroll-mt-24"><ThisDayInBollywood fact={data.thisDayInBollywood} /></section>
+            <section id="upcoming-movies" className="scroll-mt-24"><UpcomingMovies movies={data.upcomingMovies} monthLabel={data.nextMonth} /></section>
+            <section id="monthly-calendar" className="scroll-mt-24"><MonthlyCalendar /></section>
+            <section id="actor-spotlight" className="scroll-mt-24"><ActorSpotlightSection actors={data.actorSpotlight} /></section>
+            <section id="smart-reviews" className="scroll-mt-24"><SmartReviews reviews={data.reviews} /></section>
+            <section id="box-office" className="scroll-mt-24"><BoxOfficeSection data={data.boxOffice} /></section>
+            <section id="trending" className="scroll-mt-24"><TrendingSection worldwide={data.trendingWorldwide} india={data.trendingIndia} /></section>
+            <section id="bonus" className="scroll-mt-24"><BonusSection hiddenGem={data.hiddenGem} quote={data.quoteOfTheDay} /></section>
           </>
         )}
 
