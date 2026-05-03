@@ -123,6 +123,7 @@ const Index = () => {
 
   const today = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
   const showSearchResults = searchQuery.trim().length >= 2;
+  const [activeSection, setActiveSection] = useState<string>("daily-suggestions");
 
   const sections = [
     { id: "daily-suggestions", label: "Daily Suggestions", icon: Sparkles },
@@ -139,9 +140,11 @@ const Index = () => {
   ];
 
   const scrollToSection = (id: string) => {
+    setActiveSection(id);
     setTimeout(() => {
       const el = document.getElementById(id);
       if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      else window.scrollTo({ top: 0, behavior: "smooth" });
     }, 100);
   };
 
@@ -172,10 +175,17 @@ const Index = () => {
                           if (showSearchResults) handleClearSearch();
                           scrollToSection(s.id);
                         }}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-foreground hover:bg-secondary/70 hover:text-primary transition-colors text-left"
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-colors text-left ${
+                          activeSection === s.id
+                            ? "bg-primary/15 text-primary border border-primary/30 font-semibold"
+                            : "text-foreground hover:bg-secondary/70 hover:text-primary"
+                        }`}
                       >
-                        <s.icon className="w-4 h-4 text-primary" />
+                        <s.icon className={`w-4 h-4 ${activeSection === s.id ? "text-primary" : "text-primary/70"}`} />
                         <span>{s.label}</span>
+                        {activeSection === s.id && (
+                          <span className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />
+                        )}
                       </button>
                     </SheetClose>
                   ))}
@@ -288,17 +298,39 @@ const Index = () => {
         {/* Full Dashboard */}
         {!showSearchResults && (
           <>
-            <section id="daily-suggestions" className="scroll-mt-24"><DailySuggestions movies={data.dailySuggestions} monthLabel={data.currentMonth} /></section>
-            <section id="ott-this-week" className="scroll-mt-24"><OttThisWeek releases={data.ottThisWeek} /></section>
-            <section id="today-releases" className="scroll-mt-24"><TodayReleases releases={data.todayReleases} /></section>
-            <section id="this-day-bollywood" className="scroll-mt-24"><ThisDayInBollywood fact={data.thisDayInBollywood} /></section>
-            <section id="upcoming-movies" className="scroll-mt-24"><UpcomingMovies movies={data.upcomingMovies} monthLabel={data.nextMonth} /></section>
-            <section id="monthly-calendar" className="scroll-mt-24"><MonthlyCalendar /></section>
-            <section id="actor-spotlight" className="scroll-mt-24"><ActorSpotlightSection actors={data.actorSpotlight} /></section>
-            <section id="smart-reviews" className="scroll-mt-24"><SmartReviews reviews={data.reviews} /></section>
-            <section id="box-office" className="scroll-mt-24"><BoxOfficeSection data={data.boxOffice} /></section>
-            <section id="trending" className="scroll-mt-24"><TrendingSection worldwide={data.trendingWorldwide} india={data.trendingIndia} /></section>
-            <section id="bonus" className="scroll-mt-24"><BonusSection hiddenGem={data.hiddenGem} quote={data.quoteOfTheDay} /></section>
+            {activeSection === "daily-suggestions" && (
+              <section id="daily-suggestions" className="scroll-mt-24"><DailySuggestions movies={data.dailySuggestions} monthLabel={data.currentMonth} /></section>
+            )}
+            {activeSection === "ott-this-week" && (
+              <section id="ott-this-week" className="scroll-mt-24"><OttThisWeek releases={data.ottThisWeek} /></section>
+            )}
+            {activeSection === "today-releases" && (
+              <section id="today-releases" className="scroll-mt-24"><TodayReleases releases={data.todayReleases} /></section>
+            )}
+            {activeSection === "this-day-bollywood" && (
+              <section id="this-day-bollywood" className="scroll-mt-24"><ThisDayInBollywood fact={data.thisDayInBollywood} /></section>
+            )}
+            {activeSection === "upcoming-movies" && (
+              <section id="upcoming-movies" className="scroll-mt-24"><UpcomingMovies movies={data.upcomingMovies} monthLabel={data.nextMonth} /></section>
+            )}
+            {activeSection === "monthly-calendar" && (
+              <section id="monthly-calendar" className="scroll-mt-24"><MonthlyCalendar /></section>
+            )}
+            {activeSection === "actor-spotlight" && (
+              <section id="actor-spotlight" className="scroll-mt-24"><ActorSpotlightSection actors={data.actorSpotlight} /></section>
+            )}
+            {activeSection === "smart-reviews" && (
+              <section id="smart-reviews" className="scroll-mt-24"><SmartReviews reviews={data.reviews} /></section>
+            )}
+            {activeSection === "box-office" && (
+              <section id="box-office" className="scroll-mt-24"><BoxOfficeSection data={data.boxOffice} /></section>
+            )}
+            {activeSection === "trending" && (
+              <section id="trending" className="scroll-mt-24"><TrendingSection worldwide={data.trendingWorldwide} india={data.trendingIndia} /></section>
+            )}
+            {activeSection === "bonus" && (
+              <section id="bonus" className="scroll-mt-24"><BonusSection hiddenGem={data.hiddenGem} quote={data.quoteOfTheDay} /></section>
+            )}
           </>
         )}
 
