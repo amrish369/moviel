@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Film, Clapperboard, Wifi, WifiOff, Loader2, Search, Star, X, Send, Menu, Sparkles, Tv, CalendarDays, History, Rocket, CalendarRange, Users, MessageSquare, TrendingUp, Globe2, Gem } from "lucide-react";
+import { Film, Clapperboard, Wifi, WifiOff, Loader2, Search, Star, X, Send, Menu, Sparkles, Tv, CalendarDays, History, Rocket, CalendarRange, Users, MessageSquare, TrendingUp, Globe2, Gem, Infinity as InfinityIcon } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import MoviePoster from "@/components/MoviePoster";
 import FilterBar from "@/components/FilterBar";
@@ -15,6 +15,7 @@ import ActorSpotlightSection from "@/components/ActorSpotlight";
 import OttThisWeek from "@/components/OttThisWeek";
 import ThisDayInBollywood from "@/components/ThisDayInBollywood";
 import MonthlyCalendar from "@/components/MonthlyCalendar";
+import InfiniteFeed from "@/components/InfiniteFeed";
 import { useMovieIntelligence } from "@/hooks/useMovieIntelligence";
 import { useMovieSearch, SearchResult } from "@/hooks/useMovieSearch";
 
@@ -123,9 +124,10 @@ const Index = () => {
 
   const today = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
   const showSearchResults = searchQuery.trim().length >= 2;
-  const [activeSection, setActiveSection] = useState<string>("daily-suggestions");
+  const [activeSection, setActiveSection] = useState<string>("for-you-feed");
 
   const sections = [
+    { id: "for-you-feed", label: "For You (Infinite)", icon: InfinityIcon },
     { id: "daily-suggestions", label: "Daily Suggestions", icon: Sparkles },
     { id: "ott-this-week", label: "OTT This Week", icon: Tv },
     { id: "today-releases", label: "Today's Releases", icon: CalendarDays },
@@ -298,6 +300,9 @@ const Index = () => {
         {/* Full Dashboard */}
         {!showSearchResults && (
           <>
+            {activeSection === "for-you-feed" && (
+              <InfiniteFeed />
+            )}
             {activeSection === "daily-suggestions" && (
               <section id="daily-suggestions" className="scroll-mt-24"><DailySuggestions movies={data.dailySuggestions} monthLabel={data.currentMonth} /></section>
             )}
