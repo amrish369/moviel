@@ -209,7 +209,20 @@ serve(async (req) => {
       if (m && !seen.has(m.id)) { seen.add(m.id); merged.push(m); }
     }
     // Hydrate top 15 with full detail (revenue/genres/runtime)
-    const hydrated = await Promise.all(merged.slice(0, 15).map((m) => hydrate(m.id)));
+    // Daily rotation: deterministic shuffle by day-of-year so the list changes each day
+    const dayOfYear = Math.floor((Date.now() - new Date(today.getFullYear(), 0, 0).getTime()) / 86400000);
+    const seededShuffle = <T,>(arr: T[], seed: number): T[] => {
+      const a = [...arr];
+      let s = seed || 1;
+      const rand = () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(rand() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    };
+    const rotated = seededShuffle(merged, dayOfYear);
+    const hydrated = await Promise.all(rotated.slice(0, 15).map((m) => hydrate(m.id)));
     const valid = hydrated.filter(Boolean);
 
     // 2) Upcoming: dynamically pull from next 1-2 months
