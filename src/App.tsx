@@ -6,7 +6,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Index from "./pages/Index.tsx";
 import MovieDetail from "./pages/MovieDetail.tsx";
 import ActorDetail from "./pages/ActorDetail.tsx";
+import Auth from "./pages/Auth.tsx";
+import Watchlist from "./pages/Watchlist.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import { AuthProvider } from "./hooks/useAuth";
 
 const queryClient = new QueryClient();
 
@@ -16,13 +19,17 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/movie" element={<MovieDetail />} />
-          <Route path="/actor" element={<ActorDetail />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/movie" element={<MovieDetail />} />
+            <Route path="/actor" element={<ActorDetail />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/watchlist" element={<Watchlist />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

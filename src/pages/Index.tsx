@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Film, Clapperboard, Wifi, WifiOff, Loader2, Search, Star, X, Send, Menu, Sparkles, Tv, CalendarDays, History, Rocket, CalendarRange, Users, MessageSquare, TrendingUp, Globe2, Gem, Infinity as InfinityIcon } from "lucide-react";
+import { Film, Clapperboard, Wifi, WifiOff, Loader2, Search, Star, X, Send, Menu, Sparkles, Tv, CalendarDays, History, Rocket, CalendarRange, Users, MessageSquare, TrendingUp, Globe2, Gem, Infinity as InfinityIcon, Bookmark, LogIn, LogOut, User as UserIcon } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import MoviePoster from "@/components/MoviePoster";
 import FilterBar from "@/components/FilterBar";
@@ -88,6 +90,7 @@ const SearchResultCard = ({ movie, onClick }: { movie: SearchResult; onClick: ()
 
 const Index = () => {
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [mood, setMood] = useState("Mixed");
   const [category, setCategory] = useState("All");
@@ -213,10 +216,19 @@ const Index = () => {
                 {isLive ? "LIVE" : "OFFLINE"}
               </span>
             </div>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Film className="w-3 h-3" />
-              <span>{today}</span>
-            </div>
+            <Link to="/watchlist" aria-label="Watchlist" className="w-8 h-8 rounded-lg bg-secondary/60 hover:bg-secondary flex items-center justify-center">
+              <Bookmark className="w-4 h-4 text-primary" />
+            </Link>
+            {user ? (
+              <button onClick={signOut} aria-label="Sign out" className="w-8 h-8 rounded-lg bg-secondary/60 hover:bg-secondary flex items-center justify-center">
+                <LogOut className="w-4 h-4 text-foreground" />
+              </button>
+            ) : (
+              <Link to="/auth" aria-label="Sign in" className="flex items-center gap-1 px-2.5 h-8 rounded-lg bg-primary/15 hover:bg-primary/25 text-primary text-xs font-semibold">
+                <LogIn className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Sign in</span>
+              </Link>
+            )}
           </div>
         </div>
       </header>
