@@ -23,12 +23,12 @@ interface FeedItem {
   releaseDate: string | null;
 }
 
-const FeedCard = ({ item }: { item: FeedItem }) => {
+const FeedCard = ({ item, liked, saved, onLike, onSave }: {
+  item: FeedItem; liked: boolean; saved: boolean;
+  onLike: (i: FeedItem) => void; onSave: (i: FeedItem) => void;
+}) => {
   const navigate = useNavigate();
   const ref = useRef<HTMLDivElement>(null);
-  const { likes, watchlist, toggleLike, toggleWatchlist } = useUserLibrary();
-  const liked = likes.includes(item.id);
-  const saved = watchlist.includes(item.id);
 
   const onDwell = useStableCallback((ms: number) => {
     if (ms >= 1500) markViewed(item.id, item);
@@ -77,7 +77,7 @@ const FeedCard = ({ item }: { item: FeedItem }) => {
         )}
         <div className="flex items-center gap-2">
           <button
-            onClick={(e) => { e.stopPropagation(); toggleLike(item); }}
+            onClick={(e) => { e.stopPropagation(); onLike(item); }}
             className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-full transition-colors ${
               liked ? "bg-cinema-red/20 text-cinema-red" : "bg-secondary text-muted-foreground hover:text-foreground"
             }`}
@@ -87,7 +87,7 @@ const FeedCard = ({ item }: { item: FeedItem }) => {
             {liked ? "Liked" : "Like"}
           </button>
           <button
-            onClick={(e) => { e.stopPropagation(); toggleWatchlist(item); }}
+            onClick={(e) => { e.stopPropagation(); onSave(item); }}
             className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-full transition-colors ${
               saved ? "bg-primary/20 text-primary" : "bg-secondary text-muted-foreground hover:text-foreground"
             }`}
@@ -115,6 +115,7 @@ const FeedCard = ({ item }: { item: FeedItem }) => {
 };
 
 const InfiniteFeed = () => {
+  const { likes, watchlist, toggleLike, toggleWatchlist } = useUserLibrary();
   const [items, setItems] = useState<FeedItem[]>([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -169,7 +170,16 @@ const InfiniteFeed = () => {
       </div>
 
       <div className="grid gap-4">
-        {items.map((it) => <FeedCard key={it.id} item={it} />)}
+        {items.map((it) => (
+          <FeedCard
+            key={it.id}
+            item={it}
+            liked={likes.includes(it.id)}
+            saved={watchlist.includes(it.id)}
+            onLike={toggleLike}
+            onSave={toggleWatchlist}
+          />
+        ))}
       </div>
 
       <div ref={sentinelRef} className="py-6 flex items-center justify-center">
