@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Star, Heart, Send, Sparkles } from "lucide-react";
+import { Loader2, Star, Heart, Send, Sparkles, Bookmark } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   getViewedIds, getInterests, markViewed, trackClick,
-  toggleLike, getLikes, useDwellTime, trackScrollTime, useStableCallback,
+  useDwellTime, trackScrollTime, useStableCallback,
 } from "@/hooks/useFeedTracking";
+import { useUserLibrary } from "@/hooks/useUserLibrary";
 
 interface FeedItem {
   id: number;
@@ -25,7 +26,9 @@ interface FeedItem {
 const FeedCard = ({ item }: { item: FeedItem }) => {
   const navigate = useNavigate();
   const ref = useRef<HTMLDivElement>(null);
-  const [liked, setLiked] = useState(() => getLikes().includes(item.id));
+  const { likes, watchlist, toggleLike, toggleWatchlist } = useUserLibrary();
+  const liked = likes.includes(item.id);
+  const saved = watchlist.includes(item.id);
 
   const onDwell = useStableCallback((ms: number) => {
     if (ms >= 1500) markViewed(item.id, item);
@@ -74,7 +77,7 @@ const FeedCard = ({ item }: { item: FeedItem }) => {
         )}
         <div className="flex items-center gap-2">
           <button
-            onClick={(e) => { e.stopPropagation(); setLiked(toggleLike(item)); }}
+            onClick={(e) => { e.stopPropagation(); toggleLike(item); }}
             className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-full transition-colors ${
               liked ? "bg-cinema-red/20 text-cinema-red" : "bg-secondary text-muted-foreground hover:text-foreground"
             }`}
@@ -83,14 +86,24 @@ const FeedCard = ({ item }: { item: FeedItem }) => {
             <Heart className={`w-3 h-3 ${liked ? "fill-cinema-red" : ""}`} />
             {liked ? "Liked" : "Like"}
           </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); toggleWatchlist(item); }}
+            className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-full transition-colors ${
+              saved ? "bg-primary/20 text-primary" : "bg-secondary text-muted-foreground hover:text-foreground"
+            }`}
+            aria-label="Watch later"
+          >
+            <Bookmark className={`w-3 h-3 ${saved ? "fill-primary" : ""}`} />
+            {saved ? "Saved" : "Save"}
+          </button>
           <a
             href="https://t.me/cineradarai"
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-[hsl(200,80%,50%)]/15 text-[hsl(200,80%,50%)] hover:bg-[hsl(200,80%,50%)]/25 transition-colors"
+            className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full bg-[hsl(200,80%,50%)]/15 text-[hsl(200,80%,50%)] hover:bg-[hsl(200,80%,50%)]/25 transition-colors"
           >
-            <Send className="w-3 h-3" /> Download
+            <Send className="w-3 h-3" />
           </a>
           <span className="ml-auto text-[10px] uppercase tracking-wide text-muted-foreground">
             {item.popularity > 100 ? "Trending" : "For You"}
