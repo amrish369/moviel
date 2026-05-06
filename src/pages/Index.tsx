@@ -220,9 +220,9 @@ const Index = () => {
               <Bookmark className="w-4 h-4 text-primary" />
             </Link>
             {user ? (
-              <button onClick={signOut} aria-label="Sign out" className="w-8 h-8 rounded-lg bg-secondary/60 hover:bg-secondary flex items-center justify-center">
-                <LogOut className="w-4 h-4 text-foreground" />
-              </button>
+              <Link to="/dashboard" aria-label="Dashboard" className="w-8 h-8 rounded-lg bg-primary/15 hover:bg-primary/25 flex items-center justify-center">
+                <UserIcon className="w-4 h-4 text-primary" />
+              </Link>
             ) : (
               <Link to="/auth" aria-label="Sign in" className="flex items-center gap-1 px-2.5 h-8 rounded-lg bg-primary/15 hover:bg-primary/25 text-primary text-xs font-semibold">
                 <LogIn className="w-3.5 h-3.5" />

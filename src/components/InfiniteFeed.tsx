@@ -169,7 +169,7 @@ const InfiniteFeed = () => {
         <span className="text-[10px] text-muted-foreground ml-1">Personalized • Refreshed daily</span>
       </div>
 
-      <div className="grid gap-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((it) => (
           <FeedCard
             key={it.id}
