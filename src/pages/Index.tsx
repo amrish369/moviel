@@ -129,6 +129,24 @@ const Index = () => {
   const showSearchResults = searchQuery.trim().length >= 2;
   const [activeSection, setActiveSection] = useState<string>("for-you-feed");
 
+  // Dynamic SEO based on active section
+  useEffect(() => {
+    const map: Record<string, { t: string; d: string }> = {
+      "for-you-feed": { t: "CineRadar — Personalized Bollywood, South & OTT Movies 2026", d: "AI-powered movie recommendations: latest Hindi, Tamil, Telugu, Malayalam & OTT releases updated daily." },
+      "today-releases": { t: "Today's Movie Releases — Bollywood, South & OTT | CineRadar", d: "All movies releasing today across Bollywood, South Indian cinema and OTT platforms." },
+      "ott-this-week": { t: "OTT Releases This Week — Netflix, Prime, Hotstar | CineRadar", d: "Latest OTT movie & web series releases this week on Netflix, Prime Video, Hotstar and more." },
+      "upcoming-movies": { t: "Upcoming Bollywood & South Indian Movies 2026 | CineRadar", d: "Upcoming Hindi, Tamil, Telugu, Malayalam movie releases in 2026 with dates and cast." },
+      "box-office": { t: "Box Office Collection 2026 — Daily Updates | CineRadar", d: "Live Bollywood and South box office collection reports and lifetime numbers." },
+      "trending": { t: "Trending Movies India & Worldwide 2026 | CineRadar", d: "Most trending Indian and global movies right now, ranked by popularity." },
+      "monthly-calendar": { t: "Movie Release Calendar 2026 | CineRadar", d: "Monthly release calendar for all Indian and international movies in 2026." },
+    };
+    const meta = map[activeSection] || map["for-you-feed"];
+    document.title = meta.t;
+    let desc = document.querySelector('meta[name="description"]');
+    if (!desc) { desc = document.createElement("meta"); desc.setAttribute("name", "description"); document.head.appendChild(desc); }
+    desc.setAttribute("content", meta.d);
+  }, [activeSection]);
+
   const sections = [
     { id: "for-you-feed", label: "For You (Infinite)", icon: InfinityIcon },
     { id: "daily-suggestions", label: "Daily Suggestions", icon: Sparkles },
