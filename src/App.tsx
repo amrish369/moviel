@@ -8,6 +8,7 @@ import MovieDetail from "./pages/MovieDetail.tsx";
 import ActorDetail from "./pages/ActorDetail.tsx";
 import Auth from "./pages/Auth.tsx";
 import Watchlist from "./pages/Watchlist.tsx";
+import Dashboard from "./pages/Dashboard.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import { AuthProvider } from "./hooks/useAuth";
 
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/actor" element={<ActorDetail />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/watchlist" element={<Watchlist />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
