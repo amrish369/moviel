@@ -5,6 +5,7 @@ import {
   DollarSign, Play, Loader2, User, Pen, Music, Camera, Award, Send
 } from "lucide-react";
 import { useMovieDetail } from "@/hooks/useMovieDetail";
+import { usePerfTracking } from "@/hooks/usePerfTracking";
 import MoviePoster from "@/components/MoviePoster";
 
 const MovieDetailPage = () => {
@@ -12,6 +13,7 @@ const MovieDetailPage = () => {
   const navigate = useNavigate();
   const title = searchParams.get("title") || "";
   const { movie, isLoading, error, fetchDetail } = useMovieDetail();
+  usePerfTracking("movie-detail");
 
   useEffect(() => {
     if (title) fetchDetail(title);
