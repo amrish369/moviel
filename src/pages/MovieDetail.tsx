@@ -1,7 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import {
-  ArrowLeft, Star, Clock, Globe, Film, Users, Clapperboard,
+  ArrowLeft, Star, Clock, Globe, Film, Users, Clapperboard, X,
   DollarSign, Play, Loader2, User, Pen, Music, Camera, Award, Send
 } from "lucide-react";
 import { useMovieDetail } from "@/hooks/useMovieDetail";
@@ -14,6 +14,7 @@ const MovieDetailPage = () => {
   const title = searchParams.get("title") || "";
   const { movie, isLoading, error, fetchDetail } = useMovieDetail();
   usePerfTracking("movie-detail");
+  const [trailerOpen, setTrailerOpen] = useState(false);
 
   useEffect(() => {
     if (title) fetchDetail(title);
@@ -100,7 +101,8 @@ const MovieDetailPage = () => {
 
   if (!movie) return null;
 
-  const trailerUrl = movie.trailerQuery
+  const youtubeKey = movie.youtubeKey || null;
+  const fallbackSearchUrl = movie.trailerQuery
     ? `https://www.youtube.com/results?search_query=${encodeURIComponent(movie.trailerQuery)}`
     : null;
 
@@ -162,16 +164,26 @@ const MovieDetailPage = () => {
 
         {/* Action Buttons */}
         <div className="flex gap-3">
-          {trailerUrl && (
-            <a
-              href={trailerUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-cinema-red/90 hover:bg-cinema-red text-white font-display font-medium text-sm transition-colors"
-            >
-              <Play className="w-4 h-4 fill-white" />
-              Watch Trailer
-            </a>
+          {(youtubeKey || fallbackSearchUrl) && (
+            youtubeKey ? (
+              <button
+                onClick={() => setTrailerOpen(true)}
+                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-cinema-red/90 hover:bg-cinema-red text-white font-display font-medium text-sm transition-colors"
+              >
+                <Play className="w-4 h-4 fill-white" />
+                Watch Trailer
+              </button>
+            ) : (
+              <a
+                href={fallbackSearchUrl!}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-cinema-red/90 hover:bg-cinema-red text-white font-display font-medium text-sm transition-colors"
+              >
+                <Play className="w-4 h-4 fill-white" />
+                Search Trailer
+              </a>
+            )
           )}
           <a
             href="https://t.me/cineradarai"
@@ -183,6 +195,33 @@ const MovieDetailPage = () => {
             Download from Telegram
           </a>
         </div>
+
+        {trailerOpen && youtubeKey && (
+          <div
+            className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setTrailerOpen(false)}
+          >
+            <button
+              onClick={() => setTrailerOpen(false)}
+              aria-label="Close trailer"
+              className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <div
+              className="w-full max-w-4xl aspect-video rounded-xl overflow-hidden bg-black shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <iframe
+                src={`https://www.youtube.com/embed/${youtubeKey}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
+                title={`${movie.title} — Trailer`}
+                allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                allowFullScreen
+                className="w-full h-full border-0"
+              />
+            </div>
+          </div>
+        )}
 
         {/* Director & Writers */}
         <section className="glass-card rounded-xl p-5 space-y-4">
