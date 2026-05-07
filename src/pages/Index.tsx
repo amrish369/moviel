@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Film, Clapperboard, Wifi, WifiOff, Loader2, Search, Star, X, Send, Menu, Sparkles, Tv, CalendarDays, History, Rocket, CalendarRange, Users, MessageSquare, TrendingUp, Globe2, Gem, Infinity as InfinityIcon, Bookmark, LogIn, LogOut, User as UserIcon } from "lucide-react";
+import { Film, Clapperboard, Wifi, WifiOff, Loader2, Search, Star, X, Send, Menu, Sparkles, Tv, CalendarDays, History, Rocket, CalendarRange, Users, MessageSquare, TrendingUp, Globe2, Gem, Infinity as InfinityIcon, Bookmark, LogIn, LogOut, User as UserIcon, Play } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "@/components/ui/sheet";
@@ -18,6 +18,7 @@ import OttThisWeek from "@/components/OttThisWeek";
 import ThisDayInBollywood from "@/components/ThisDayInBollywood";
 import MonthlyCalendar from "@/components/MonthlyCalendar";
 import InfiniteFeed from "@/components/InfiniteFeed";
+import TrailerReels from "@/components/TrailerReels";
 import { useMovieIntelligence } from "@/hooks/useMovieIntelligence";
 import { useMovieSearch, SearchResult } from "@/hooks/useMovieSearch";
 
@@ -149,6 +150,7 @@ const Index = () => {
 
   const sections = [
     { id: "for-you-feed", label: "For You (Infinite)", icon: InfinityIcon },
+    { id: "trailer-reels", label: "Trailer Reels 🎬", icon: Play },
     { id: "daily-suggestions", label: "Daily Suggestions", icon: Sparkles },
     { id: "ott-this-week", label: "OTT This Week", icon: Tv },
     { id: "today-releases", label: "Today's Releases", icon: CalendarDays },
@@ -332,6 +334,9 @@ const Index = () => {
           <>
             {activeSection === "for-you-feed" && (
               <InfiniteFeed />
+            )}
+            {activeSection === "trailer-reels" && (
+              <section id="trailer-reels"><TrailerReels /></section>
             )}
             {activeSection === "daily-suggestions" && (
               <section id="daily-suggestions" className="scroll-mt-24"><DailySuggestions movies={data.dailySuggestions} monthLabel={data.currentMonth} /></section>
