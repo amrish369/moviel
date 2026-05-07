@@ -21,9 +21,10 @@ const ReelCard = ({ trailer, active, muted, onToggleMute }: {
   trailer: Trailer; active: boolean; muted: boolean; onToggleMute: () => void;
 }) => {
   const navigate = useNavigate();
-  const { isLiked, isSaved, toggleLike, toggleWatchlist } = useUserLibrary();
-  const liked = isLiked(trailer.title);
-  const saved = isSaved(trailer.title);
+  const { likes, watchlist, toggleLike, toggleWatchlist } = useUserLibrary();
+  const liked = likes.includes(trailer.id);
+  const saved = watchlist.includes(trailer.id);
+  const item = { id: trailer.id, title: trailer.title, poster: trailer.poster, year: trailer.year };
 
   const src = active
     ? `https://www.youtube.com/embed/${trailer.youtubeKey}?autoplay=1&mute=${muted ? 1 : 0}&controls=0&modestbranding=1&rel=0&playsinline=1&loop=1&playlist=${trailer.youtubeKey}`
@@ -66,7 +67,7 @@ const ReelCard = ({ trailer, active, muted, onToggleMute }: {
       {/* Right action rail */}
       <div className="absolute right-3 bottom-28 z-20 flex flex-col gap-4 items-center">
         <button
-          onClick={(e) => { e.stopPropagation(); toggleLike(trailer.title); }}
+          onClick={(e) => { e.stopPropagation(); toggleLike(item); }}
           className="flex flex-col items-center gap-1"
           aria-label="Like"
         >
@@ -76,7 +77,7 @@ const ReelCard = ({ trailer, active, muted, onToggleMute }: {
           <span className="text-[10px] text-white/90 font-medium">Like</span>
         </button>
         <button
-          onClick={(e) => { e.stopPropagation(); toggleWatchlist(trailer.title); }}
+          onClick={(e) => { e.stopPropagation(); toggleWatchlist(item); }}
           className="flex flex-col items-center gap-1"
           aria-label="Save"
         >
