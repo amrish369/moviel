@@ -38,6 +38,7 @@ export interface MovieDetail {
     audienceScore?: string;
   };
   trailerQuery?: string;
+  youtubeKey?: string | null;
   similarMovies?: {
     title: string;
     year: number;
