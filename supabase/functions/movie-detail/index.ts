@@ -50,7 +50,7 @@ serve(async (req) => {
     }
 
     const d = await tmdbFetch(`/movie/${first.id}`, {
-      append_to_response: "credits,external_ids,recommendations",
+      append_to_response: "credits,external_ids,recommendations,videos",
     });
 
     const directorObj = d.credits?.crew?.find((c: any) => c.job === "Director");
@@ -74,6 +74,13 @@ serve(async (req) => {
       poster: r.poster_path ? `${TMDB_IMG}${r.poster_path}` : null,
       imdb: Math.round((r.vote_average || 0) * 10) / 10,
     }));
+
+    const vids = d.videos?.results || [];
+    const ytTrailer =
+      vids.find((x: any) => x.site === "YouTube" && x.type === "Trailer" && x.official) ||
+      vids.find((x: any) => x.site === "YouTube" && x.type === "Trailer") ||
+      vids.find((x: any) => x.site === "YouTube" && x.type === "Teaser") ||
+      vids.find((x: any) => x.site === "YouTube");
 
     const movieData = {
       title: d.title,
@@ -106,6 +113,7 @@ serve(async (req) => {
         audienceScore: null,
       },
       trailerQuery: `${d.title} ${d.release_date?.substring(0, 4) || ""} official trailer`,
+      youtubeKey: ytTrailer?.key || null,
       poster: d.poster_path ? `${TMDB_IMG}${d.poster_path}` : null,
       similarMovies: similar,
     };
