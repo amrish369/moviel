@@ -21,6 +21,7 @@ import InfiniteFeed from "@/components/InfiniteFeed";
 import TrailerReels from "@/components/TrailerReels";
 import { useMovieIntelligence } from "@/hooks/useMovieIntelligence";
 import { useMovieSearch, SearchResult } from "@/hooks/useMovieSearch";
+import { usePerfTracking } from "@/hooks/usePerfTracking";
 
 const SearchResultCard = ({ movie, onClick }: { movie: SearchResult; onClick: () => void }) => (
   <div
@@ -92,6 +93,7 @@ const SearchResultCard = ({ movie, onClick }: { movie: SearchResult; onClick: ()
 const Index = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  usePerfTracking("home");
   const [searchQuery, setSearchQuery] = useState("");
   const [mood, setMood] = useState("Mixed");
   const [category, setCategory] = useState("All");
