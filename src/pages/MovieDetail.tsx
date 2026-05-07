@@ -17,6 +17,56 @@ const MovieDetailPage = () => {
     if (title) fetchDetail(title);
   }, [title, fetchDetail]);
 
+  // SEO: dynamic title, description, canonical, and Movie JSON-LD
+  useEffect(() => {
+    if (!movie) return;
+    const seoTitle = `${movie.title} (${movie.year}) — Cast, Plot, Reviews & Trailer | CineRadar`;
+    const seoDesc = (movie.plot || `${movie.title} ${movie.year} ${movie.genre} movie — cast, ratings, box office, trailer and where to watch.`).slice(0, 158);
+    document.title = seoTitle;
+
+    const setMeta = (name: string, content: string, attr: "name" | "property" = "name") => {
+      let el = document.querySelector(`meta[${attr}="${name}"]`) as HTMLMetaElement | null;
+      if (!el) { el = document.createElement("meta"); el.setAttribute(attr, name); document.head.appendChild(el); }
+      el.setAttribute("content", content);
+    };
+    setMeta("description", seoDesc);
+    setMeta("keywords", `${movie.title}, ${movie.title} review, ${movie.title} cast, ${movie.title} trailer, ${movie.year} ${movie.genre.toLowerCase()} movie, bollywood, south indian, ott`);
+    setMeta("og:title", seoTitle, "property");
+    setMeta("og:description", seoDesc, "property");
+    setMeta("og:type", "video.movie", "property");
+    if ((movie as any).poster) setMeta("og:image", (movie as any).poster, "property");
+
+    const canonicalHref = `https://moviel.lovable.app/movie?title=${encodeURIComponent(movie.title)}`;
+    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    if (!canonical) { canonical = document.createElement("link"); canonical.rel = "canonical"; document.head.appendChild(canonical); }
+    canonical.href = canonicalHref;
+
+    const ldId = "movie-jsonld";
+    document.getElementById(ldId)?.remove();
+    const ld = document.createElement("script");
+    ld.type = "application/ld+json";
+    ld.id = ldId;
+    ld.textContent = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "Movie",
+      name: movie.title,
+      description: movie.plot || undefined,
+      image: (movie as any).poster || undefined,
+      datePublished: movie.year ? String(movie.year) : undefined,
+      genre: movie.genre ? movie.genre.split(",").map(g => g.trim()) : undefined,
+      inLanguage: movie.language || undefined,
+      duration: movie.runtime || undefined,
+      director: movie.director ? { "@type": "Person", name: movie.director.name } : undefined,
+      actor: (movie.cast || []).slice(0, 8).map(a => ({ "@type": "Person", name: a.name })),
+      aggregateRating: movie.imdb ? {
+        "@type": "AggregateRating", ratingValue: movie.imdb, bestRating: 10, ratingCount: 1000
+      } : undefined,
+    });
+    document.head.appendChild(ld);
+
+    return () => { document.getElementById(ldId)?.remove(); };
+  }, [movie]);
+
   const handleSimilarClick = (similarTitle: string) => {
     navigate(`/movie?title=${encodeURIComponent(similarTitle)}`);
   };
