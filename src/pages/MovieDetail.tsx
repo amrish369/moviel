@@ -102,6 +102,13 @@ const MovieDetailPage = () => {
   if (!movie) return null;
 
   const youtubeKey = movie.youtubeKey || null;
+  const videoType = movie.videoType || null;
+  const isTeaser = videoType && videoType !== "Trailer";
+  const playLabel = youtubeKey
+    ? isTeaser
+      ? `Watch ${videoType === "Teaser" ? "Teaser" : videoType}`
+      : "Watch Trailer"
+    : "Watch Trailer";
   const fallbackSearchUrl = movie.trailerQuery
     ? `https://www.youtube.com/results?search_query=${encodeURIComponent(movie.trailerQuery)}`
     : null;
@@ -171,7 +178,7 @@ const MovieDetailPage = () => {
                 className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-cinema-red/90 hover:bg-cinema-red text-white font-display font-medium text-sm transition-colors"
               >
                 <Play className="w-4 h-4 fill-white" />
-                Watch Trailer
+                {playLabel}
               </button>
             ) : (
               <a

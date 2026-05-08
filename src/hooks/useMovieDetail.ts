@@ -39,6 +39,7 @@ export interface MovieDetail {
   };
   trailerQuery?: string;
   youtubeKey?: string | null;
+  videoType?: string | null;
   similarMovies?: {
     title: string;
     year: number;

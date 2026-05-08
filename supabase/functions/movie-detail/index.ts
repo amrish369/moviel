@@ -79,6 +79,7 @@ serve(async (req) => {
     const ytTrailer =
       vids.find((x: any) => x.site === "YouTube" && x.type === "Trailer" && x.official) ||
       vids.find((x: any) => x.site === "YouTube" && x.type === "Trailer") ||
+      vids.find((x: any) => x.site === "YouTube" && x.type === "Teaser" && x.official) ||
       vids.find((x: any) => x.site === "YouTube" && x.type === "Teaser") ||
       vids.find((x: any) => x.site === "YouTube");
 
@@ -114,6 +115,7 @@ serve(async (req) => {
       },
       trailerQuery: `${d.title} ${d.release_date?.substring(0, 4) || ""} official trailer`,
       youtubeKey: ytTrailer?.key || null,
+      videoType: ytTrailer?.type || null,
       poster: d.poster_path ? `${TMDB_IMG}${d.poster_path}` : null,
       similarMovies: similar,
     };
