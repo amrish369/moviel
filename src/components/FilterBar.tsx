@@ -5,15 +5,17 @@ interface FilterBarProps {
   onSearch: (query: string) => void;
   onMoodChange: (mood: string) => void;
   onCategoryChange: (cat: string) => void;
+  mood?: string;
+  category?: string;
 }
 
 const moods = ["Mixed", "Action", "Romance", "Thriller", "Comedy", "Emotional"];
 const categories = ["All", "Bollywood", "Hollywood", "South", "Web Series"];
 
-const FilterBar = ({ onSearch, onMoodChange, onCategoryChange }: FilterBarProps) => {
+const FilterBar = ({ onSearch, onMoodChange, onCategoryChange, mood, category }: FilterBarProps) => {
   const [query, setQuery] = useState("");
-  const [activeMood, setActiveMood] = useState("Mixed");
-  const [activeCategory, setActiveCategory] = useState("All");
+  const activeMood = mood ?? "Mixed";
+  const activeCategory = category ?? "All";
   const [showFilters, setShowFilters] = useState(false);
 
   const handleSearch = (e: React.FormEvent) => {
@@ -49,9 +51,9 @@ const FilterBar = ({ onSearch, onMoodChange, onCategoryChange }: FilterBarProps)
             <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wider">Mood</p>
             <div className="flex flex-wrap gap-2">
               {moods.map((mood) => (
-                <button
+              <button
                   key={mood}
-                  onClick={() => { setActiveMood(mood); onMoodChange(mood); }}
+                  onClick={() => onMoodChange(mood)}
                   className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                     activeMood === mood
                       ? "bg-primary text-primary-foreground"
@@ -69,7 +71,7 @@ const FilterBar = ({ onSearch, onMoodChange, onCategoryChange }: FilterBarProps)
               {categories.map((cat) => (
                 <button
                   key={cat}
-                  onClick={() => { setActiveCategory(cat); onCategoryChange(cat); }}
+                  onClick={() => onCategoryChange(cat)}
                   className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                     activeCategory === cat
                       ? "bg-primary text-primary-foreground"
