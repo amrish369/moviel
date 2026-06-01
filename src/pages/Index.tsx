@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Film, Clapperboard, Wifi, WifiOff, Loader2, Search, Star, X, Send, Menu, Sparkles, Tv, CalendarDays, History, Rocket, CalendarRange, Users, MessageSquare, TrendingUp, Globe2, Gem, Infinity as InfinityIcon, Bookmark, LogIn, LogOut, User as UserIcon, Play } from "lucide-react";
+import { Film, Clapperboard, Wifi, WifiOff, Loader2, Search, Star, X, Send, Menu, Sparkles, Tv, CalendarDays, History, Rocket, CalendarRange, Users, MessageSquare, TrendingUp, Globe2, Gem, Infinity as InfinityIcon, Bookmark, LogIn, LogOut, User as UserIcon, Play, MonitorPlay, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "@/components/ui/sheet";
@@ -19,6 +19,7 @@ import ThisDayInBollywood from "@/components/ThisDayInBollywood";
 import MonthlyCalendar from "@/components/MonthlyCalendar";
 import InfiniteFeed from "@/components/InfiniteFeed";
 import TrailerReels from "@/components/TrailerReels";
+import WebSeriesSection from "@/components/WebSeriesSection";
 import { useMovieIntelligence } from "@/hooks/useMovieIntelligence";
 import { useMovieSearch, SearchResult } from "@/hooks/useMovieSearch";
 import { usePerfTracking } from "@/hooks/usePerfTracking";
@@ -153,6 +154,7 @@ const Index = () => {
   const sections = [
     { id: "for-you-feed", label: "For You (Infinite)", icon: InfinityIcon },
     { id: "trailer-reels", label: "Trailer Reels 🎬", icon: Play },
+    { id: "web-series", label: "Web Series", icon: MonitorPlay },
     { id: "daily-suggestions", label: "Daily Suggestions", icon: Sparkles },
     { id: "ott-this-week", label: "OTT This Week", icon: Tv },
     { id: "today-releases", label: "Today's Releases", icon: CalendarDays },
@@ -281,6 +283,8 @@ const Index = () => {
           onSearch={handleSearch}
           onMoodChange={handleMoodChange}
           onCategoryChange={handleCategoryChange}
+          mood={mood}
+          category={category}
         />
 
         {/* Search Results Mode */}
@@ -340,8 +344,23 @@ const Index = () => {
             {activeSection === "trailer-reels" && (
               <section id="trailer-reels"><TrailerReels /></section>
             )}
+            {activeSection === "web-series" && (
+              <section id="web-series" className="scroll-mt-24"><WebSeriesSection /></section>
+            )}
             {activeSection === "daily-suggestions" && (
-              <section id="daily-suggestions" className="scroll-mt-24"><DailySuggestions movies={data.dailySuggestions} monthLabel={data.currentMonth} /></section>
+              <section id="daily-suggestions" className="scroll-mt-24">
+                <div className="flex justify-end mb-2">
+                  <button
+                    onClick={() => fetchMovies(mood, category)}
+                    disabled={isLoading}
+                    className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-primary/15 hover:bg-primary/25 text-primary transition-colors disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
+                    Refresh
+                  </button>
+                </div>
+                <DailySuggestions movies={data.dailySuggestions} monthLabel={data.currentMonth} />
+              </section>
             )}
             {activeSection === "ott-this-week" && (
               <section id="ott-this-week" className="scroll-mt-24"><OttThisWeek releases={data.ottThisWeek} /></section>

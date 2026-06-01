@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Loader2, Play, Volume2, VolumeX, Star, Bookmark, Heart, Info } from "lucide-react";
+import { Loader2, Play, Volume2, VolumeX, Star, Bookmark, Heart, Info, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useUserLibrary } from "@/hooks/useUserLibrary";
@@ -143,17 +143,23 @@ const TrailerReels = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  const loadMore = useCallback(async () => {
+  const loadMore = useCallback(async (opts?: { refresh?: boolean }) => {
     if (loading) return;
     setLoading(true);
     try {
-      const excludeIds = trailers.map(t => t.id);
+      const refresh = !!opts?.refresh;
+      const excludeIds = refresh ? [] : trailers.map(t => t.id);
       const { data, error } = await supabase.functions.invoke("trailers", {
-        body: { page, excludeIds },
+        body: { page: refresh ? 1 : page, excludeIds, refresh },
       });
       if (error) throw error;
       const items = (data?.items || []) as Trailer[];
-      if (items.length) {
+      if (refresh) {
+        setTrailers(items);
+        setActiveIdx(0);
+        setPage(2);
+        containerRef.current?.scrollTo({ top: 0, behavior: "auto" });
+      } else if (items.length) {
         setTrailers(prev => [...prev, ...items]);
         setPage(p => p + 1);
       }
@@ -192,6 +198,16 @@ const TrailerReels = () => {
       className="h-[100svh] w-full overflow-y-scroll snap-y snap-mandatory bg-black -mx-4"
       style={{ scrollSnapStop: "always", scrollbarWidth: "none" }}
     >
+      {/* Refresh button */}
+      <button
+        onClick={() => loadMore({ refresh: true })}
+        disabled={loading}
+        aria-label="Refresh trailers"
+        className="fixed top-20 right-3 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-white text-xs font-semibold hover:bg-black/80 disabled:opacity-50"
+      >
+        <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+        Refresh
+      </button>
       {trailers.map((t, i) => (
         <div
           key={t.id}
