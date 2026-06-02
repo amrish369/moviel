@@ -76,8 +76,8 @@ serve(async (req) => {
       }).catch(() => ({ results: [] })),
     ]);
 
-    const released = (releasedRaw.results || []).slice(0, 12).map(mapShow);
-    const upcoming = (upcomingRaw.results || []).slice(0, 12).map(mapShow);
+    const released = (releasedRaw.results || []).slice(0, 24).map(mapShow);
+    const upcoming = (upcomingRaw.results || []).slice(0, 24).map(mapShow);
 
     return new Response(JSON.stringify({ released, upcoming }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

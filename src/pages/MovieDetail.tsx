@@ -7,6 +7,7 @@ import {
 import { useMovieDetail } from "@/hooks/useMovieDetail";
 import { usePerfTracking } from "@/hooks/usePerfTracking";
 import MoviePoster from "@/components/MoviePoster";
+import DownloadButton from "@/components/DownloadButton";
 
 const MovieDetailPage = () => {
   const [searchParams] = useSearchParams();
@@ -192,15 +193,7 @@ const MovieDetailPage = () => {
               </a>
             )
           )}
-          <a
-            href="https://t.me/cineradarai"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-[hsl(200,80%,50%)]/90 hover:bg-[hsl(200,80%,50%)] text-white font-display font-medium text-sm transition-colors"
-          >
-            <Send className="w-4 h-4" />
-            Download from Telegram
-          </a>
+          <DownloadButton movieTitle={movie?.title} variant="full" label="Download from Telegram" />
         </div>
 
         {trailerOpen && youtubeKey && (
