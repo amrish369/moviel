@@ -222,7 +222,7 @@ serve(async (req) => {
       return a;
     };
     const rotated = seededShuffle(merged, dayOfYear);
-    const hydrated = await Promise.all(rotated.slice(0, 15).map((m) => hydrate(m.id)));
+    const hydrated = await Promise.all(rotated.slice(0, 30).map((m) => hydrate(m.id)));
     const valid = hydrated.filter(Boolean);
 
     // 2) Upcoming: dynamically pull from next 1-2 months
@@ -237,7 +237,7 @@ serve(async (req) => {
       return map[code] || code?.toUpperCase() || "Hindi";
     };
 
-    const dailySuggestions = valid.slice(0, 5).map((m: any) => ({
+    const dailySuggestions = valid.slice(0, 20).map((m: any) => ({
       title: m.title,
       year: m.release_date ? parseInt(m.release_date.substring(0, 4)) : 2024,
       genre: (m.genres || []).map((g: any) => g.name).join(", ") || "N/A",
@@ -247,7 +247,7 @@ serve(async (req) => {
       whyWatch: m.tagline || (m.overview ? m.overview.substring(0, 120) : "A must-watch Indian film"),
     }));
 
-    const todayReleases = valid.slice(5, 8).map((m: any) => ({
+    const todayReleases = valid.slice(5, 20).map((m: any) => ({
       title: m.title,
       platform: "OTT/Theatrical",
       language: langName(m.original_language),
@@ -255,7 +255,7 @@ serve(async (req) => {
     }));
 
     // Dynamic upcoming movies from next 1-2 months
-    const upcomingMovies = upcomingPool.slice(0, 8).map((m: any) => {
+    const upcomingMovies = upcomingPool.slice(0, 24).map((m: any) => {
       const lang = m.original_language;
       const cat = ["ta", "te", "ml", "kn"].includes(lang) ? "South Indian"
         : lang === "hi" ? "Bollywood" : "Regional";
@@ -273,7 +273,7 @@ serve(async (req) => {
       })));
     }
 
-    const reviews = valid.slice(0, 3).map((m: any) => {
+    const reviews = valid.slice(0, 12).map((m: any) => {
       const rating = m.vote_average || 0;
       return {
         title: m.title,
@@ -293,7 +293,7 @@ serve(async (req) => {
 
     const boxOffice = valid
       .filter((m: any) => m.revenue && m.revenue > 0)
-      .slice(0, 5)
+      .slice(0, 15)
       .map((m: any) => {
         const rating = m.vote_average || 0;
         return {
@@ -312,8 +312,8 @@ serve(async (req) => {
       });
     }
 
-    const trendingIndia = valid.slice(0, 5).map((m: any, i: number) => ({ title: m.title, rank: i + 1 }));
-    const trendingWorldwide = valid.slice(2, 7).map((m: any, i: number) => ({ title: m.title, rank: i + 1 }));
+    const trendingIndia = valid.slice(0, 15).map((m: any, i: number) => ({ title: m.title, rank: i + 1 }));
+    const trendingWorldwide = valid.slice(2, 17).map((m: any, i: number) => ({ title: m.title, rank: i + 1 }));
 
     const gem = valid.find((m: any) => (m.vote_average || 0) >= 7 && (m.vote_count || 0) < 2000) || valid[valid.length - 1];
     const hiddenGem = gem
@@ -332,7 +332,7 @@ serve(async (req) => {
     const quoteOfTheDay = quotes[new Date().getDate() % quotes.length];
 
     const actorSpotlight = [...ACTOR_SPOTLIGHTS].sort(() => Math.random() - 0.5).slice(0, 3);
-    const ottThisWeek = OTT_RELEASES.slice(0, 5);
+    const ottThisWeek = OTT_RELEASES.slice(0, OTT_RELEASES.length);
     const thisDayInBollywood = getThisDayFact();
 
     return new Response(JSON.stringify({
