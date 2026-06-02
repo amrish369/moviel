@@ -1,15 +1,10 @@
-import { useEffect, useState, useCallback } from "react";
-import { Loader2, RefreshCw, Star, Tv } from "lucide-react";
+import { useState } from "react";
+import { Loader2, Star, Tv } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import SectionHeader from "./SectionHeader";
+import { useSectionFeed, type SectionItem } from "@/hooks/useSectionFeed";
 
-type Show = {
-  id: number; title: string; overview: string;
-  poster: string | null; backdrop: string | null;
-  rating: number; language: string;
-  firstAirDate: string | null; year: number | null;
-};
+type Show = SectionItem;
 
 const ShowCard = ({ show, upcoming }: { show: Show; upcoming?: boolean }) => {
   const navigate = useNavigate();
@@ -46,44 +41,16 @@ const ShowCard = ({ show, upcoming }: { show: Show; upcoming?: boolean }) => {
   );
 };
 
-const WebSeriesSection = () => {
-  const [released, setReleased] = useState<Show[]>([]);
-  const [upcoming, setUpcoming] = useState<Show[]>([]);
+const WebSeriesSection = ({ mood, category }: { mood?: string; category?: string }) => {
   const [tab, setTab] = useState<"released" | "upcoming">("released");
-  const [loading, setLoading] = useState(false);
-
-  const load = useCallback(async (refresh = false) => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("webseries", {
-        body: { refresh },
-      });
-      if (error) throw error;
-      setReleased(data?.released || []);
-      setUpcoming(data?.upcoming || []);
-    } catch (e) {
-      console.error("webseries load error", e);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { load(false); }, [load]);
-
-  const items = tab === "released" ? released : upcoming;
+  const section = tab === "released" ? "webseries-released" : "webseries-upcoming";
+  const { items, loading, hasMore, error, sentinelRef, loadMore } =
+    useSectionFeed(section, mood, category);
 
   return (
     <section>
       <div className="flex items-start justify-between gap-3 mb-4">
         <SectionHeader icon="📺" title="Web Series" subtitle="Latest & upcoming Indian web series" />
-        <button
-          onClick={() => load(true)}
-          disabled={loading}
-          className="shrink-0 mt-1 flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-primary/15 hover:bg-primary/25 text-primary transition-colors disabled:opacity-50"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-          Refresh
-        </button>
       </div>
 
       <div className="flex gap-2 mb-4">
@@ -100,20 +67,23 @@ const WebSeriesSection = () => {
         ))}
       </div>
 
-      {loading && items.length === 0 ? (
-        <div className="glass-card rounded-lg p-8 flex flex-col items-center gap-2">
-          <Loader2 className="w-6 h-6 text-primary animate-spin" />
-          <p className="text-sm text-muted-foreground">Loading web series...</p>
-        </div>
-      ) : items.length === 0 ? (
-        <div className="glass-card rounded-lg p-6 text-center text-sm text-muted-foreground">
-          No {tab} web series found. Try refresh.
-        </div>
-      ) : (
-        <div className="grid gap-3">
-          {items.map((s) => <ShowCard key={s.id} show={s} upcoming={tab === "upcoming"} />)}
-        </div>
-      )}
+      <div className="grid gap-3">
+        {items.map((s) => <ShowCard key={s.id} show={s} upcoming={tab === "upcoming"} />)}
+      </div>
+      <div ref={sentinelRef} className="py-6 flex items-center justify-center">
+        {loading && <Loader2 className="w-5 h-5 text-primary animate-spin" />}
+        {!loading && !hasMore && items.length > 0 && (
+          <p className="text-xs text-muted-foreground">You're all caught up ✨</p>
+        )}
+        {!loading && items.length === 0 && !error && (
+          <div className="glass-card rounded-lg p-6 text-center text-sm text-muted-foreground w-full">
+            No {tab} web series for these filters.
+          </div>
+        )}
+        {error && !loading && (
+          <button onClick={loadMore} className="text-xs text-primary underline">Retry</button>
+        )}
+      </div>
     </section>
   );
 };
