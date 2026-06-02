@@ -1,7 +1,8 @@
-import { Star, Send } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import MoviePoster from "./MoviePoster";
 import SectionHeader from "./SectionHeader";
+import DownloadButton from "./DownloadButton";
+import { Star } from "lucide-react";
 import type { Movie } from "@/data/movieData";
 
 const DailySuggestions = ({ movies, monthLabel }: { movies: Movie[]; monthLabel?: string }) => {
@@ -47,16 +48,7 @@ const DailySuggestions = ({ movies, monthLabel }: { movies: Movie[]; monthLabel?
                     <span className="text-[10px] text-muted-foreground bg-secondary px-2 py-0.5 rounded">
                       {movie.platform}
                     </span>
-                    <a
-                      href="https://t.me/cineradarai"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="flex items-center gap-1 text-[10px] font-medium px-2.5 py-1 rounded-full bg-[hsl(200,80%,50%)]/15 text-[hsl(200,80%,50%)] hover:bg-[hsl(200,80%,50%)]/25 transition-colors"
-                    >
-                      <Send className="w-3 h-3" />
-                      Download
-                    </a>
+                    <DownloadButton movieTitle={movie.title} />
                   </div>
                 </div>
               </div>

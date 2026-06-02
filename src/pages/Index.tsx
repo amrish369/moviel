@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Film, Clapperboard, Wifi, WifiOff, Loader2, Search, Star, X, Send, Menu, Sparkles, Tv, CalendarDays, History, Rocket, CalendarRange, Users, MessageSquare, TrendingUp, Globe2, Gem, Infinity as InfinityIcon, Bookmark, LogIn, LogOut, User as UserIcon, Play, MonitorPlay, RefreshCw } from "lucide-react";
+import { Film, Clapperboard, Wifi, WifiOff, Loader2, Search, Star, X, Menu, Sparkles, Tv, CalendarDays, History, Rocket, CalendarRange, Users, MessageSquare, TrendingUp, Globe2, Gem, Infinity as InfinityIcon, Bookmark, LogIn, LogOut, User as UserIcon, Play, MonitorPlay, RefreshCw } from "lucide-react";
+import DownloadButton from "@/components/DownloadButton";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "@/components/ui/sheet";
@@ -72,16 +73,7 @@ const SearchResultCard = ({ movie, onClick }: { movie: SearchResult; onClick: ()
               {movie.verdict}
             </span>
           )}
-          <a
-            href="https://t.me/cineradarai"
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="ml-auto flex items-center gap-1 text-[10px] font-medium px-2.5 py-1 rounded-full bg-[hsl(200,80%,50%)]/15 text-[hsl(200,80%,50%)] hover:bg-[hsl(200,80%,50%)]/25 transition-colors"
-          >
-            <Send className="w-3 h-3" />
-            Download
-          </a>
+          <DownloadButton movieTitle={movie.title} className="ml-auto" />
         </div>
         {movie.whyWatch && (
           <p className="text-xs text-primary/80 italic">💡 {movie.whyWatch}</p>

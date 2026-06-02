@@ -7,6 +7,7 @@ import {
 import { useMovieDetail } from "@/hooks/useMovieDetail";
 import { usePerfTracking } from "@/hooks/usePerfTracking";
 import MoviePoster from "@/components/MoviePoster";
+import DownloadButton from "@/components/DownloadButton";
 
 const MovieDetailPage = () => {
   const [searchParams] = useSearchParams();

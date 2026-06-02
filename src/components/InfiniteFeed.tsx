@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Star, Heart, Send, Sparkles, Bookmark } from "lucide-react";
+import { Loader2, Star, Heart, Sparkles, Bookmark } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   getViewedIds, getInterests, markViewed, trackClick,
   useDwellTime, trackScrollTime, useStableCallback,
 } from "@/hooks/useFeedTracking";
 import { useUserLibrary } from "@/hooks/useUserLibrary";
+import DownloadButton from "./DownloadButton";
 
 interface FeedItem {
   id: number;
@@ -96,15 +97,7 @@ const FeedCard = ({ item, liked, saved, onLike, onSave }: {
             <Bookmark className={`w-3 h-3 ${saved ? "fill-primary" : ""}`} />
             {saved ? "Saved" : "Save"}
           </button>
-          <a
-            href="https://t.me/cineradarai"
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full bg-[hsl(200,80%,50%)]/15 text-[hsl(200,80%,50%)] hover:bg-[hsl(200,80%,50%)]/25 transition-colors"
-          >
-            <Send className="w-3 h-3" />
-          </a>
+          <DownloadButton movieTitle={item.title} />
           <span className="ml-auto text-[10px] uppercase tracking-wide text-muted-foreground">
             {item.popularity > 100 ? "Trending" : "For You"}
           </span>
