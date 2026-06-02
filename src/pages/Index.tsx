@@ -331,7 +331,7 @@ const Index = () => {
               <section id="trailer-reels"><TrailerReels /></section>
             )}
             {activeSection === "web-series" && (
-              <section id="web-series" className="scroll-mt-24"><WebSeriesSection /></section>
+              <section id="web-series" className="scroll-mt-24"><WebSeriesSection mood={mood} category={category} /></section>
             )}
             {activeSection === "daily-suggestions" && (
               <div id="daily-suggestions">
