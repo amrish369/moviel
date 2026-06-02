@@ -1,21 +1,15 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Film, Clapperboard, Wifi, WifiOff, Loader2, Search, Star, X, Menu, Sparkles, Tv, CalendarDays, History, Rocket, CalendarRange, Users, MessageSquare, TrendingUp, Globe2, Gem, Infinity as InfinityIcon, Bookmark, LogIn, LogOut, User as UserIcon, Play, MonitorPlay, RefreshCw } from "lucide-react";
+import { Clapperboard, Wifi, WifiOff, Loader2, Search, Star, X, Menu, Sparkles, Tv, CalendarDays, History, Rocket, CalendarRange, Users, MessageSquare, TrendingUp, Globe2, Gem, Infinity as InfinityIcon, Bookmark, LogIn, User as UserIcon, Play, MonitorPlay } from "lucide-react";
 import DownloadButton from "@/components/DownloadButton";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import MoviePoster from "@/components/MoviePoster";
 import FilterBar from "@/components/FilterBar";
-import DailySuggestions from "@/components/DailySuggestions";
-import TodayReleases from "@/components/TodayReleases";
-import UpcomingMovies from "@/components/UpcomingMovies";
-import SmartReviews from "@/components/SmartReviews";
-import BoxOfficeSection from "@/components/BoxOfficeSection";
-import TrendingSection from "@/components/TrendingSection";
 import BonusSection from "@/components/BonusSection";
+import InfiniteSection from "@/components/InfiniteSection";
 import ActorSpotlightSection from "@/components/ActorSpotlight";
-import OttThisWeek from "@/components/OttThisWeek";
 import ThisDayInBollywood from "@/components/ThisDayInBollywood";
 import MonthlyCalendar from "@/components/MonthlyCalendar";
 import InfiniteFeed from "@/components/InfiniteFeed";
@@ -337,34 +331,36 @@ const Index = () => {
               <section id="trailer-reels"><TrailerReels /></section>
             )}
             {activeSection === "web-series" && (
-              <section id="web-series" className="scroll-mt-24"><WebSeriesSection /></section>
+              <section id="web-series" className="scroll-mt-24"><WebSeriesSection mood={mood} category={category} /></section>
             )}
             {activeSection === "daily-suggestions" && (
-              <section id="daily-suggestions" className="scroll-mt-24">
-                <div className="flex justify-end mb-2">
-                  <button
-                    onClick={() => fetchMovies(mood, category)}
-                    disabled={isLoading}
-                    className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-primary/15 hover:bg-primary/25 text-primary transition-colors disabled:opacity-50"
-                  >
-                    <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
-                    Refresh
-                  </button>
-                </div>
-                <DailySuggestions movies={data.dailySuggestions} monthLabel={data.currentMonth} />
-              </section>
+              <div id="daily-suggestions">
+                <InfiniteSection section="daily" mood={mood} category={category}
+                  icon="🎬" title="Daily Movie Suggestions"
+                  subtitle="Top picks personalised to your mood & category" />
+              </div>
             )}
             {activeSection === "ott-this-week" && (
-              <section id="ott-this-week" className="scroll-mt-24"><OttThisWeek releases={data.ottThisWeek} /></section>
+              <div id="ott-this-week">
+                <InfiniteSection section="ott" mood={mood} category={category}
+                  icon="📺" title="OTT This Week"
+                  subtitle="Now streaming — keeps loading as you scroll" />
+              </div>
             )}
             {activeSection === "today-releases" && (
-              <section id="today-releases" className="scroll-mt-24"><TodayReleases releases={data.todayReleases} /></section>
+              <div id="today-releases">
+                <InfiniteSection section="today" mood={mood} category={category}
+                  icon="🆕" title="Today's Releases" subtitle="Latest drops this week" />
+              </div>
             )}
             {activeSection === "this-day-bollywood" && (
               <section id="this-day-bollywood" className="scroll-mt-24"><ThisDayInBollywood fact={data.thisDayInBollywood} /></section>
             )}
             {activeSection === "upcoming-movies" && (
-              <section id="upcoming-movies" className="scroll-mt-24"><UpcomingMovies movies={data.upcomingMovies} monthLabel={data.nextMonth} /></section>
+              <div id="upcoming-movies">
+                <InfiniteSection section="upcoming" mood={mood} category={category}
+                  icon="📅" title="Upcoming Movies" subtitle="Releases coming up — keep scrolling" />
+              </div>
             )}
             {activeSection === "monthly-calendar" && (
               <section id="monthly-calendar" className="scroll-mt-24"><MonthlyCalendar /></section>
@@ -373,13 +369,24 @@ const Index = () => {
               <section id="actor-spotlight" className="scroll-mt-24"><ActorSpotlightSection actors={data.actorSpotlight} /></section>
             )}
             {activeSection === "smart-reviews" && (
-              <section id="smart-reviews" className="scroll-mt-24"><SmartReviews reviews={data.reviews} /></section>
+              <div id="smart-reviews">
+                <InfiniteSection section="reviews" mood={mood} category={category}
+                  icon="⭐" title="Smart Reviews" subtitle="Verdicts on the latest releases" />
+              </div>
             )}
             {activeSection === "box-office" && (
-              <section id="box-office" className="scroll-mt-24"><BoxOfficeSection data={data.boxOffice} /></section>
+              <div id="box-office">
+                <InfiniteSection section="boxoffice" mood={mood} category={category}
+                  icon="💰" title="Box Office Collection" subtitle="Top earners — scrolling pulls more" />
+              </div>
             )}
             {activeSection === "trending" && (
-              <section id="trending" className="scroll-mt-24"><TrendingSection worldwide={data.trendingWorldwide} india={data.trendingIndia} /></section>
+              <div id="trending" className="space-y-8">
+                <InfiniteSection section="trending-india" mood={mood} category={category}
+                  icon="🔥" title="Trending in India" subtitle="Hot right now" />
+                <InfiniteSection section="trending-worldwide" mood={mood} category={category}
+                  icon="🌍" title="Trending Worldwide" subtitle="Global pop charts" />
+              </div>
             )}
             {activeSection === "bonus" && (
               <section id="bonus" className="scroll-mt-24"><BonusSection hiddenGem={data.hiddenGem} quote={data.quoteOfTheDay} /></section>
