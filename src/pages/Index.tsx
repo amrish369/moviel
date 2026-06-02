@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Film, Clapperboard, Wifi, WifiOff, Loader2, Search, Star, X, Menu, Sparkles, Tv, CalendarDays, History, Rocket, CalendarRange, Users, MessageSquare, TrendingUp, Globe2, Gem, Infinity as InfinityIcon, Bookmark, LogIn, LogOut, User as UserIcon, Play, MonitorPlay, RefreshCw } from "lucide-react";
+import { Clapperboard, Wifi, WifiOff, Loader2, Search, Star, X, Menu, Sparkles, Tv, CalendarDays, History, Rocket, CalendarRange, Users, MessageSquare, TrendingUp, Globe2, Gem, Infinity as InfinityIcon, Bookmark, LogIn, User as UserIcon, Play, MonitorPlay } from "lucide-react";
 import DownloadButton from "@/components/DownloadButton";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,7 +10,6 @@ import FilterBar from "@/components/FilterBar";
 import BonusSection from "@/components/BonusSection";
 import InfiniteSection from "@/components/InfiniteSection";
 import ActorSpotlightSection from "@/components/ActorSpotlight";
-import OttThisWeek from "@/components/OttThisWeek";
 import ThisDayInBollywood from "@/components/ThisDayInBollywood";
 import MonthlyCalendar from "@/components/MonthlyCalendar";
 import InfiniteFeed from "@/components/InfiniteFeed";
