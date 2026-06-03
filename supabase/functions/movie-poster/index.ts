@@ -52,7 +52,7 @@ serve(async (req) => {
     });
   } catch (e) {
     console.error("movie-poster error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown", fallback: true }), {
+    return new Response(JSON.stringify({ error: "An error occurred. Please try again.", fallback: true }), {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
