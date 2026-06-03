@@ -21,7 +21,7 @@ async function tmdbFetch(path: string, query: Record<string, string> = {}) {
   const params = new URLSearchParams(query);
   if (auth.keyParam) params.set("api_key", auth.keyParam);
   const res = await fetch(`${TMDB_BASE}${path}?${params}`, { headers: auth.headers });
-  if (!res.ok) throw new Error(`TMDB ${res.status}: ${await res.text()}`);
+  if (!res.ok) throw new Error(`Upstream API error: ${res.status}`);
   return res.json();
 }
 
@@ -177,7 +177,7 @@ serve(async (req) => {
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error) {
     console.error("movie-search error:", error);
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Unknown" }), {
+    return new Response(JSON.stringify({ error: "An error occurred. Please try again." }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

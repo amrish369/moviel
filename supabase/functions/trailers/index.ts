@@ -104,7 +104,7 @@ serve(async (req) => {
   } catch (error) {
     console.error(error);
     return new Response(JSON.stringify({
-      error: error instanceof Error ? error.message : "Unknown error", items: [], hasMore: false,
+      error: "An error occurred. Please try again.", items: [], hasMore: false,
     }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
