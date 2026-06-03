@@ -13,16 +13,22 @@ export interface SearchResult {
   plot?: string;
   verdict?: string;
   whyWatch?: string;
+  mediaType?: "movie" | "tv";
+  poster?: string | null;
 }
 
 export function useMovieSearch() {
   const [results, setResults] = useState<SearchResult[]>([]);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [didYouMean, setDidYouMean] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
 
   const searchMovies = useCallback(async (query: string) => {
     if (!query || query.trim().length < 2) {
       setResults([]);
+      setSuggestions([]);
+      setDidYouMean(null);
       setSearchError(null);
       return;
     }
@@ -39,10 +45,14 @@ export function useMovieSearch() {
       if (data?.error) throw new Error(data.error);
 
       setResults(data?.results || []);
+      setSuggestions(data?.suggestions || []);
+      setDidYouMean(data?.didYouMean || null);
     } catch (err) {
       console.error("Search failed:", err);
       setSearchError(err instanceof Error ? err.message : "Search failed");
       setResults([]);
+      setSuggestions([]);
+      setDidYouMean(null);
     } finally {
       setIsSearching(false);
     }
@@ -50,8 +60,10 @@ export function useMovieSearch() {
 
   const clearSearch = useCallback(() => {
     setResults([]);
+    setSuggestions([]);
+    setDidYouMean(null);
     setSearchError(null);
   }, []);
 
-  return { results, isSearching, searchError, searchMovies, clearSearch };
+  return { results, suggestions, didYouMean, isSearching, searchError, searchMovies, clearSearch };
 }
