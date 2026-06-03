@@ -72,8 +72,8 @@ const WebSeriesSection = ({ mood, category }: { mood?: string; category?: string
       </div>
       <div ref={sentinelRef} className="py-6 flex items-center justify-center">
         {loading && <Loader2 className="w-5 h-5 text-primary animate-spin" />}
-        {!loading && !hasMore && items.length > 0 && (
-          <p className="text-xs text-muted-foreground">You're all caught up ✨</p>
+        {!loading && hasMore && items.length > 0 && (
+          <p className="text-[11px] text-muted-foreground">Scroll for more…</p>
         )}
         {!loading && items.length === 0 && !error && (
           <div className="glass-card rounded-lg p-6 text-center text-sm text-muted-foreground w-full">

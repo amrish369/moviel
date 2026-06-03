@@ -130,7 +130,7 @@ const InfiniteFeed = () => {
       const incoming: FeedItem[] = (data?.items || []).filter((m: FeedItem) => !seenRef.current.has(m.id));
       incoming.forEach((m) => seenRef.current.add(m.id));
       setItems((prev) => [...prev, ...incoming]);
-      setHasMore(Boolean(data?.hasMore) && incoming.length > 0 && page < 15);
+      setHasMore(Boolean(data?.hasMore) && incoming.length > 0 && page < 500);
       setPage((p) => p + 1);
     } catch (e: any) {
       setError(e?.message || "Could not load more");
@@ -177,8 +177,8 @@ const InfiniteFeed = () => {
 
       <div ref={sentinelRef} className="py-6 flex items-center justify-center">
         {loading && <Loader2 className="w-5 h-5 text-primary animate-spin" />}
-        {!loading && !hasMore && items.length > 0 && (
-          <p className="text-xs text-muted-foreground">You're all caught up — fresh picks tomorrow ✨</p>
+        {!loading && hasMore && items.length > 0 && (
+          <p className="text-[11px] text-muted-foreground">Scroll for more…</p>
         )}
         {error && !loading && (
           <button onClick={loadMore} className="text-xs text-primary underline">Retry</button>

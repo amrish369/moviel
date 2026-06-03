@@ -220,8 +220,8 @@ const InfiniteSection = ({ section, mood, category, title, icon, subtitle }: Pro
       </div>
       <div ref={sentinelRef} className="py-6 flex items-center justify-center">
         {loading && <Loader2 className="w-5 h-5 text-primary animate-spin" />}
-        {!loading && !hasMore && items.length > 0 && (
-          <p className="text-xs text-muted-foreground">You're all caught up ✨</p>
+        {!loading && hasMore && items.length > 0 && (
+          <p className="text-[11px] text-muted-foreground">Scroll for more…</p>
         )}
         {!loading && items.length === 0 && !error && (
           <p className="text-xs text-muted-foreground">No items match your filters yet.</p>
