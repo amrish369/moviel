@@ -310,6 +310,34 @@ const Index = () => {
               </div>
             )}
 
+            {!isSearching && didYouMean && (
+              <div className="text-xs text-muted-foreground">
+                Did you mean{" "}
+                <button
+                  onClick={() => applySuggestion(didYouMean)}
+                  className="text-primary underline font-medium"
+                >
+                  {didYouMean}
+                </button>
+                ?
+              </div>
+            )}
+
+            {!isSearching && !searchError && suggestions.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-[11px] text-muted-foreground mr-1">Try:</span>
+                {suggestions.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => applySuggestion(s)}
+                    className="text-[11px] px-2 py-0.5 rounded-full bg-secondary/70 text-foreground hover:bg-primary/20 hover:text-primary transition"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {!isSearching && !searchError && results.length > 0 && (
               <div className="space-y-3">
                 {results.map((movie, i) => (
