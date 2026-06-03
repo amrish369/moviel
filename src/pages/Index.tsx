@@ -54,8 +54,12 @@ const SearchResultCard = ({ movie, onClick }: { movie: SearchResult; onClick: ()
         )}
         <div className="flex items-center gap-3 pt-1">
           {movie.platform && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground border border-border">
-              {movie.platform}
+            <span className={`text-[10px] px-2 py-0.5 rounded-full border ${
+              movie.mediaType === "tv"
+                ? "bg-primary/15 text-primary border-primary/30"
+                : "bg-secondary text-secondary-foreground border-border"
+            }`}>
+              {movie.mediaType === "tv" ? "📺 Web Series" : movie.platform}
             </span>
           )}
           {movie.verdict && (
