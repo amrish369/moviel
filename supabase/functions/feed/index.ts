@@ -41,7 +41,7 @@ serve(async (req) => {
   try {
     if (!Deno.env.get("TMDB_API_KEY")) throw new Error("TMDB_API_KEY not set");
     const body = await req.json().catch(() => ({}));
-    const page: number = Math.max(1, Math.min(20, Number(body.page) || 1));
+    const page: number = Math.max(1, Math.min(500, Number(body.page) || 1));
     const excludeIds: number[] = Array.isArray(body.excludeIds) ? body.excludeIds.slice(0, 500) : [];
     const excludeSet = new Set<number>(excludeIds);
     const interests: Record<string, number> = body.interests || {}; // { "genre:28": 3, "lang:hi": 5 }

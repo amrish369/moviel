@@ -54,8 +54,12 @@ const SearchResultCard = ({ movie, onClick }: { movie: SearchResult; onClick: ()
         )}
         <div className="flex items-center gap-3 pt-1">
           {movie.platform && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground border border-border">
-              {movie.platform}
+            <span className={`text-[10px] px-2 py-0.5 rounded-full border ${
+              movie.mediaType === "tv"
+                ? "bg-primary/15 text-primary border-primary/30"
+                : "bg-secondary text-secondary-foreground border-border"
+            }`}>
+              {movie.mediaType === "tv" ? "📺 Web Series" : movie.platform}
             </span>
           )}
           {movie.verdict && (
@@ -85,7 +89,7 @@ const Index = () => {
   const [mood, setMood] = useState("Mixed");
   const [category, setCategory] = useState("All");
   const { data, isLoading, error, isLive, fetchMovies } = useMovieIntelligence();
-  const { results, isSearching, searchError, searchMovies, clearSearch } = useMovieSearch();
+  const { results, suggestions, didYouMean, isSearching, searchError, searchMovies, clearSearch } = useMovieSearch();
 
   useEffect(() => {
     fetchMovies(mood, category);
@@ -98,6 +102,11 @@ const Index = () => {
     } else {
       clearSearch();
     }
+  };
+
+  const applySuggestion = (s: string) => {
+    setSearchQuery(s);
+    searchMovies(s);
   };
 
   const handleClearSearch = () => {
@@ -302,6 +311,34 @@ const Index = () => {
             {searchError && (
               <div className="bg-cinema-red/10 border border-cinema-red/30 rounded-lg p-3 text-sm text-cinema-red">
                 ⚠️ {searchError}
+              </div>
+            )}
+
+            {!isSearching && didYouMean && (
+              <div className="text-xs text-muted-foreground">
+                Did you mean{" "}
+                <button
+                  onClick={() => applySuggestion(didYouMean)}
+                  className="text-primary underline font-medium"
+                >
+                  {didYouMean}
+                </button>
+                ?
+              </div>
+            )}
+
+            {!isSearching && !searchError && suggestions.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-[11px] text-muted-foreground mr-1">Try:</span>
+                {suggestions.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => applySuggestion(s)}
+                    className="text-[11px] px-2 py-0.5 rounded-full bg-secondary/70 text-foreground hover:bg-primary/20 hover:text-primary transition"
+                  >
+                    {s}
+                  </button>
+                ))}
               </div>
             )}
 
