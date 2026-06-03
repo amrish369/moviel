@@ -85,7 +85,7 @@ const Index = () => {
   const [mood, setMood] = useState("Mixed");
   const [category, setCategory] = useState("All");
   const { data, isLoading, error, isLive, fetchMovies } = useMovieIntelligence();
-  const { results, isSearching, searchError, searchMovies, clearSearch } = useMovieSearch();
+  const { results, suggestions, didYouMean, isSearching, searchError, searchMovies, clearSearch } = useMovieSearch();
 
   useEffect(() => {
     fetchMovies(mood, category);
@@ -98,6 +98,11 @@ const Index = () => {
     } else {
       clearSearch();
     }
+  };
+
+  const applySuggestion = (s: string) => {
+    setSearchQuery(s);
+    searchMovies(s);
   };
 
   const handleClearSearch = () => {
