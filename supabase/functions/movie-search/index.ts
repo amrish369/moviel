@@ -44,9 +44,25 @@ function levenshtein(a: string, b: string): number {
   return dp[m][n];
 }
 function similarity(a: string, b: string): number {
-  const dist = levenshtein(a, b);
-  const maxLen = Math.max(a.length, b.length) || 1;
+  const aa = normalizeTitle(a);
+  const bb = normalizeTitle(b);
+  const dist = levenshtein(aa, bb);
+  const maxLen = Math.max(aa.length, bb.length) || 1;
   return 1 - dist / maxLen;
+}
+
+function normalizeTitle(s: string): string {
+  return (s || "")
+    .toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/sh/g, "s")
+    .replace(/([bcdfgjklmnpqrstvwxyz])h/g, "$1")
+    .replace(/aa/g, "a")
+    .replace(/ee/g, "i")
+    .replace(/oo/g, "u")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 const LANG_MAP: Record<string, string> = {
@@ -93,6 +109,10 @@ function fuzzyVariants(q: string): string[] {
   const trimmed = q.trim();
   const words = trimmed.split(/\s+/).filter(Boolean);
   const variants = new Set<string>();
+  const normalized = normalizeTitle(trimmed);
+  if (normalized && normalized !== trimmed.toLowerCase()) variants.add(normalized);
+  variants.add(trimmed.replace(/sh/gi, "s"));
+  variants.add(trimmed.replace(/h/gi, ""));
   if (trimmed.length > 3) variants.add(trimmed.slice(0, -1));
   if (trimmed.length > 4) variants.add(trimmed.slice(0, -2));
   if (words.length > 1) {
@@ -101,7 +121,7 @@ function fuzzyVariants(q: string): string[] {
     variants.add(words[0]);
   }
   if (trimmed.length > 5) variants.add(trimmed.slice(0, Math.ceil(trimmed.length * 0.7)));
-  return Array.from(variants).filter(Boolean);
+  return Array.from(variants).map((v) => v.trim()).filter((v) => v && v.toLowerCase() !== trimmed.toLowerCase());
 }
 
 serve(async (req) => {
