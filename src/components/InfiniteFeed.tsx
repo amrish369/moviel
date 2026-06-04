@@ -153,8 +153,9 @@ const InfiniteFeed = ({ mood, category }: { mood?: string; category?: string }) 
     setError(null);
   }, [mood, category]);
 
-  // initial load
-  useEffect(() => { loadMore(); /* eslint-disable-next-line */ }, []);
+  useEffect(() => {
+    if (items.length === 0 && hasMore && !loading) loadMore();
+  }, [items.length, hasMore, loading, loadMore]);
 
   // Intersection Observer for infinite scroll (preloads ~5 ahead via rootMargin)
   useEffect(() => {
