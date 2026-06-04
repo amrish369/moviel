@@ -107,7 +107,7 @@ serve(async (req) => {
     if (!Deno.env.get("TMDB_API_KEY")) throw new Error("TMDB_API_KEY not configured");
     const body = await req.json().catch(() => ({}));
     const section = String(body.section || "daily");
-    const page = Math.max(1, Math.min(500, Number(body.page) || 1));
+    const page = Math.max(1, Math.min(5000, Number(body.page) || 1));
     const mood = body.mood && body.mood !== "Mixed" ? String(body.mood) : null;
     const category = body.category && body.category !== "All" ? String(body.category) : null;
 
@@ -159,7 +159,7 @@ serve(async (req) => {
       totalPages = r.totalPages;
     } else if (section === "trending-india") {
       try {
-        const data = await tmdbFetch(`/trending/movie/week`, { page: String(page) });
+        const data = await tmdbFetch(`/trending/movie/week`, { page: String(((page - 1) % 500) + 1) });
         items = (data.results || [])
           .filter((m: any) => (langs).split("|").includes(m.original_language))
           .filter((m: any) => matchesGenre(m.genre_ids || [], genre))
@@ -168,12 +168,12 @@ serve(async (req) => {
       } catch { items = []; }
     } else if (section === "trending-worldwide") {
       try {
-        const data = await tmdbFetch(`/trending/movie/week`, { page: String(page) });
+        const data = await tmdbFetch(`/trending/movie/week`, { page: String(((page - 1) % 500) + 1) });
         items = (data.results || []).filter((m: any) => matchesGenre(m.genre_ids || [], genre)).map(mapMovie);
         totalPages = Math.min(data.total_pages || 1, 500);
       } catch { items = []; }
     } else if (section === "webseries-released") {
-      const data = await tmdbFetch("/discover/tv", {
+      let data = await tmdbFetch("/discover/tv", {
         with_original_language: langs,
         ...(tvGenre ? { with_genres: tvGenre } : {}),
         "first_air_date.gte": fmtDate(new Date(today.getTime() - 365 * 86400000)),
@@ -181,6 +181,17 @@ serve(async (req) => {
         sort_by: "popularity.desc", include_adult: "false",
         "vote_count.gte": "1", page: String(((page - 1) % 500) + 1),
       }).catch(() => ({ results: [], total_pages: 0 }));
+      const tvPages = Math.min(data.total_pages || 1, 500);
+      if ((!data.results || data.results.length === 0) && tvPages > 0) {
+        data = await tmdbFetch("/discover/tv", {
+          with_original_language: langs,
+          ...(tvGenre ? { with_genres: tvGenre } : {}),
+          "first_air_date.gte": fmtDate(new Date(today.getTime() - 365 * 86400000)),
+          "first_air_date.lte": todayStr,
+          sort_by: "popularity.desc", include_adult: "false",
+          "vote_count.gte": "1", page: String(((page - 1) % tvPages) + 1),
+        }).catch(() => ({ results: [], total_pages: 0 }));
+      }
       items = (data.results || []).map((s: any) => ({
         id: s.id, title: s.name || s.original_name, overview: s.overview || "",
         poster: s.poster_path ? `https://image.tmdb.org/t/p/w500${s.poster_path}` : null,
@@ -190,9 +201,9 @@ serve(async (req) => {
         firstAirDate: s.first_air_date || null,
         year: s.first_air_date ? parseInt(s.first_air_date.substring(0, 4)) : null,
       }));
-      totalPages = Math.min(data.total_pages || 1, 500);
+      totalPages = tvPages;
     } else if (section === "webseries-upcoming") {
-      const data = await tmdbFetch("/discover/tv", {
+      let data = await tmdbFetch("/discover/tv", {
         with_original_language: langs,
         ...(tvGenre ? { with_genres: tvGenre } : {}),
         "first_air_date.gte": todayStr,
@@ -200,6 +211,17 @@ serve(async (req) => {
         sort_by: "popularity.desc", include_adult: "false",
         page: String(((page - 1) % 500) + 1),
       }).catch(() => ({ results: [], total_pages: 0 }));
+      const tvPages = Math.min(data.total_pages || 1, 500);
+      if ((!data.results || data.results.length === 0) && tvPages > 0) {
+        data = await tmdbFetch("/discover/tv", {
+          with_original_language: langs,
+          ...(tvGenre ? { with_genres: tvGenre } : {}),
+          "first_air_date.gte": todayStr,
+          "first_air_date.lte": next180,
+          sort_by: "popularity.desc", include_adult: "false",
+          page: String(((page - 1) % tvPages) + 1),
+        }).catch(() => ({ results: [], total_pages: 0 }));
+      }
       items = (data.results || []).map((s: any) => ({
         id: s.id, title: s.name || s.original_name, overview: s.overview || "",
         poster: s.poster_path ? `https://image.tmdb.org/t/p/w500${s.poster_path}` : null,
@@ -209,7 +231,7 @@ serve(async (req) => {
         firstAirDate: s.first_air_date || null,
         year: s.first_air_date ? parseInt(s.first_air_date.substring(0, 4)) : null,
       }));
-      totalPages = Math.min(data.total_pages || 1, 500);
+      totalPages = tvPages;
     } else {
       return new Response(JSON.stringify({ error: "Unknown section", items: [], hasMore: false }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
