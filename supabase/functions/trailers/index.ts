@@ -7,6 +7,15 @@ const corsHeaders = {
 
 const TMDB_BASE = "https://api.themoviedb.org/3";
 const INDIAN_LANGS = "hi|ta|te|ml|kn|bn|mr|pa";
+const CATEGORY_LANG: Record<string, string> = {
+  Bollywood: "hi",
+  South: "ta|te|ml|kn",
+  Hollywood: "en",
+  "Web Series": INDIAN_LANGS,
+};
+const MOOD_GENRE: Record<string, string> = {
+  Action: "28", Comedy: "35", Thriller: "53", Romance: "10749", Emotional: "18",
+};
 const LANG_MAP: Record<string, string> = {
   hi: "Hindi", ta: "Tamil", te: "Telugu", ml: "Malayalam",
   kn: "Kannada", bn: "Bengali", mr: "Marathi", pa: "Punjabi", en: "English",
@@ -39,6 +48,10 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const requestedPage = Math.max(1, Math.min(5000, Number(body.page) || 1));
     const refresh = Boolean(body.refresh);
+    const mood = body.mood && body.mood !== "Mixed" ? String(body.mood) : null;
+    const category = body.category && body.category !== "All" ? String(body.category) : null;
+    const langs = (category && CATEGORY_LANG[category]) || INDIAN_LANGS;
+    const genre = mood ? MOOD_GENRE[mood] : undefined;
     // On refresh, pick a random page within a wider window so the user sees fresh trailers
     const page = refresh ? Math.floor(Math.random() * 25) + 1 : ((requestedPage - 1) % 500) + 1;
     const excludeIds: number[] = Array.isArray(body.excludeIds) ? body.excludeIds : [];
@@ -50,14 +63,16 @@ serve(async (req) => {
 
     const streams = await Promise.all([
       tmdbFetch("/discover/movie", {
-        with_original_language: INDIAN_LANGS,
+        with_original_language: langs,
+        ...(genre ? { with_genres: genre } : {}),
         "primary_release_date.gte": last180,
         "primary_release_date.lte": todayStr,
         sort_by: "popularity.desc", include_adult: "false",
         "vote_count.gte": "3", page: String(page),
       }).catch(() => ({ results: [] })),
       tmdbFetch("/discover/movie", {
-        with_original_language: INDIAN_LANGS,
+        with_original_language: langs,
+        ...(genre ? { with_genres: genre } : {}),
         sort_by: "popularity.desc", include_adult: "false",
         "vote_count.gte": "30", page: String(page),
       }).catch(() => ({ results: [] })),
