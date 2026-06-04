@@ -176,7 +176,9 @@ const TrailerReels = ({ mood, category }: { mood?: string; category?: string }) 
     setActiveIdx(0);
   }, [mood, category]);
 
-  useEffect(() => { loadMore(); /* initial */ }, []);
+  useEffect(() => {
+    if (!loading && trailers.length === 0) loadMore();
+  }, [loading, trailers.length, loadMore]);
 
   // IntersectionObserver to track active reel
   useEffect(() => {
