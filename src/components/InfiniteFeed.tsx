@@ -127,7 +127,12 @@ const InfiniteFeed = () => {
         body: { page, excludeIds, interests },
       });
       if (fnErr) throw fnErr;
-      const incoming: FeedItem[] = (data?.items || []).filter((m: FeedItem) => !seenRef.current.has(m.id));
+      const rawItems: FeedItem[] = data?.items || [];
+      let incoming: FeedItem[] = rawItems.filter((m: FeedItem) => !seenRef.current.has(m.id));
+      if (incoming.length === 0 && rawItems.length > 0) {
+        seenRef.current = new Set();
+        incoming = rawItems.filter((m, index, arr) => arr.findIndex((x) => x.id === m.id) === index);
+      }
       incoming.forEach((m) => seenRef.current.add(m.id));
       setItems((prev) => [...prev, ...incoming]);
       setHasMore(data?.hasMore !== false && page < 5000);
