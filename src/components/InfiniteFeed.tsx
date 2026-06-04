@@ -121,7 +121,7 @@ const InfiniteFeed = () => {
     if (loading || !hasMore) return;
     setLoading(true); setError(null);
     try {
-      const excludeIds = Array.from(new Set([...getViewedIds(), ...Array.from(seenRef.current)]));
+      const excludeIds = Array.from(new Set(getViewedIds())).slice(0, 200);
       const interests = getInterests();
       const { data, error: fnErr } = await supabase.functions.invoke("feed", {
         body: { page, excludeIds, interests },
