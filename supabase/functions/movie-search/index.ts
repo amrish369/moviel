@@ -171,11 +171,15 @@ serve(async (req) => {
     if (!Deno.env.get("TMDB_API_KEY")) throw new Error("TMDB_API_KEY not configured");
 
     const q = query.trim();
-    let raw = uniqueResults(await searchMulti(q));
+    const variantQueries = fuzzyVariants(q).slice(0, 5);
+    let raw = uniqueResults([
+      ...(await searchMulti(q)),
+      ...(await Promise.all(variantQueries.map((variant) => searchMulti(variant)))).flat(),
+    ]);
     let didYouMean: string | null = null;
 
     if (raw.length === 0) {
-      for (const variant of fuzzyVariants(q)) {
+      for (const variant of variantQueries) {
         const r = uniqueResults(await searchMulti(variant));
         if (r.length > 0) {
           raw = r;
