@@ -41,7 +41,8 @@ serve(async (req) => {
   try {
     if (!Deno.env.get("TMDB_API_KEY")) throw new Error("TMDB_API_KEY not set");
     const body = await req.json().catch(() => ({}));
-    const page: number = Math.max(1, Math.min(500, Number(body.page) || 1));
+    const page: number = Math.max(1, Math.min(5000, Number(body.page) || 1));
+    const tmdbPage = String(((page - 1) % 500) + 1);
     const excludeIds: number[] = Array.isArray(body.excludeIds) ? body.excludeIds.slice(0, 500) : [];
     const excludeSet = new Set<number>(excludeIds);
     const interests: Record<string, number> = body.interests || {}; // { "genre:28": 3, "lang:hi": 5 }
@@ -58,15 +59,15 @@ serve(async (req) => {
         "primary_release_date.gte": last120,
         "primary_release_date.lte": todayStr,
         sort_by: "popularity.desc", include_adult: "false",
-        "vote_count.gte": "5", page: String(page),
+        "vote_count.gte": "5", page: tmdbPage,
       }).catch(() => ({ results: [] })),
       // Trending Indian (week)
-      tmdbFetch("/trending/movie/week", { page: String(page) }).catch(() => ({ results: [] })),
+      tmdbFetch("/trending/movie/week", { page: tmdbPage }).catch(() => ({ results: [] })),
       // Top rated Indian (rotating page)
       tmdbFetch("/discover/movie", {
         with_original_language: INDIAN_LANGS,
         sort_by: "vote_average.desc", "vote_count.gte": "300",
-        include_adult: "false", page: String(page),
+        include_adult: "false", page: tmdbPage,
       }).catch(() => ({ results: [] })),
     ]);
 
@@ -102,7 +103,7 @@ serve(async (req) => {
     // Diversity: avoid same language back-to-back
     const ordered: any[] = [];
     const remaining = [...scored];
-    while (remaining.length && ordered.length < 12) {
+    while (remaining.length) {
       const lastLang = ordered[ordered.length - 1]?.original_language;
       const idx = remaining.findIndex((x) => x.m.original_language !== lastLang);
       const pick = idx >= 0 ? remaining.splice(idx, 1)[0] : remaining.shift()!;
