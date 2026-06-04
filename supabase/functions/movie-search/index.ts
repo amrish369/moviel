@@ -124,6 +124,40 @@ function fuzzyVariants(q: string): string[] {
   return Array.from(variants).map((v) => v.trim()).filter((v) => v && v.toLowerCase() !== trimmed.toLowerCase());
 }
 
+function uniqueResults(results: any[]) {
+  const seen = new Set<string>();
+  return results.filter((r) => {
+    const key = `${r.media_type}:${r.id}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+async function fuzzyCandidatePool(q: string) {
+  const streams = await Promise.all([
+    tmdbFetch("/trending/all/week", { page: "1" }).catch(() => ({ results: [] })),
+    tmdbFetch("/movie/popular", { page: "1" }).catch(() => ({ results: [] })),
+    tmdbFetch("/tv/popular", { page: "1" }).catch(() => ({ results: [] })),
+    tmdbFetch("/discover/movie", { with_original_language: "hi|ta|te|ml|kn|bn|mr|pa", sort_by: "popularity.desc", include_adult: "false", page: "1" }).catch(() => ({ results: [] })),
+    tmdbFetch("/discover/tv", { with_original_language: "hi|ta|te|ml|kn|bn|mr|pa", sort_by: "popularity.desc", include_adult: "false", page: "1" }).catch(() => ({ results: [] })),
+  ]);
+  const pool: any[] = [];
+  for (const stream of streams) {
+    for (const r of (stream.results || [])) {
+      const media_type = r.media_type || (r.title ? "movie" : "tv");
+      if (media_type !== "movie" && media_type !== "tv") continue;
+      const withType = { ...r, media_type };
+      const title = media_type === "tv" ? (withType.name || withType.original_name || "") : (withType.title || withType.original_title || "");
+      const sim = similarity(q, title);
+      const nq = normalizeTitle(q);
+      const nt = normalizeTitle(title);
+      if (sim >= 0.48 || nt.includes(nq) || nq.includes(nt)) pool.push(withType);
+    }
+  }
+  return uniqueResults(pool);
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
