@@ -93,10 +93,11 @@ serve(async (req) => {
       for (const m of (s.results || [])) {
         if (!m || seen.has(m.id) || excludeSet.has(m.id)) continue;
         // Indian-only filter for trending stream
-        if (!m.original_language || !INDIAN_LANGS.split("|").includes(m.original_language)) {
+        if (!m.original_language || !langs.split("|").includes(m.original_language)) {
           // allow English only if user shows interest
           if (!(interests[`lang:${m.original_language}`] > 0)) continue;
         }
+        if (genre && !(m.genre_ids || []).some((g: number) => genre.split("|").includes(String(g)))) continue;
         seen.add(m.id);
         pool.push(m);
       }
