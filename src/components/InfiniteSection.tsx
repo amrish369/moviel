@@ -216,7 +216,7 @@ const InfiniteSection = ({ section, mood, category, title, icon, subtitle }: Pro
     <section className="scroll-mt-24">
       <SectionHeader icon={icon} title={title} subtitle={subtitle} />
       <div className="grid gap-2.5">
-        {items.map(renderItem)}
+        {items.map((item, index) => renderItem(item, index))}
       </div>
       <div ref={sentinelRef} className="py-6 flex items-center justify-center">
         {loading && <Loader2 className="w-5 h-5 text-primary animate-spin" />}

@@ -7,6 +7,15 @@ const corsHeaders = {
 
 const TMDB_BASE = "https://api.themoviedb.org/3";
 const INDIAN_LANGS = "hi|ta|te|ml|kn|bn|mr|pa";
+const CATEGORY_LANG: Record<string, string> = {
+  Bollywood: "hi",
+  South: "ta|te|ml|kn",
+  Hollywood: "en",
+  "Web Series": INDIAN_LANGS,
+};
+const MOOD_GENRE: Record<string, string> = {
+  Action: "28", Comedy: "35", Thriller: "53", Romance: "10749", Emotional: "18",
+};
 
 function tmdbAuth() {
   const key = Deno.env.get("TMDB_API_KEY") || "";
@@ -41,10 +50,15 @@ serve(async (req) => {
   try {
     if (!Deno.env.get("TMDB_API_KEY")) throw new Error("TMDB_API_KEY not set");
     const body = await req.json().catch(() => ({}));
-    const page: number = Math.max(1, Math.min(500, Number(body.page) || 1));
+    const page: number = Math.max(1, Math.min(5000, Number(body.page) || 1));
+    const tmdbPage = String(((page - 1) % 500) + 1);
     const excludeIds: number[] = Array.isArray(body.excludeIds) ? body.excludeIds.slice(0, 500) : [];
     const excludeSet = new Set<number>(excludeIds);
     const interests: Record<string, number> = body.interests || {}; // { "genre:28": 3, "lang:hi": 5 }
+    const mood = body.mood && body.mood !== "Mixed" ? String(body.mood) : null;
+    const category = body.category && body.category !== "All" ? String(body.category) : null;
+    const langs = (category && CATEGORY_LANG[category]) || INDIAN_LANGS;
+    const genre = mood ? MOOD_GENRE[mood] : undefined;
 
     const today = new Date();
     const last120 = fmtDate(new Date(today.getTime() - 120 * 86400000));
@@ -54,19 +68,21 @@ serve(async (req) => {
     const streams = await Promise.all([
       // Indian latest + popular
       tmdbFetch("/discover/movie", {
-        with_original_language: INDIAN_LANGS,
+        with_original_language: langs,
+        ...(genre ? { with_genres: genre } : {}),
         "primary_release_date.gte": last120,
         "primary_release_date.lte": todayStr,
         sort_by: "popularity.desc", include_adult: "false",
-        "vote_count.gte": "5", page: String(page),
+        "vote_count.gte": "5", page: tmdbPage,
       }).catch(() => ({ results: [] })),
       // Trending Indian (week)
-      tmdbFetch("/trending/movie/week", { page: String(page) }).catch(() => ({ results: [] })),
+      tmdbFetch("/trending/movie/week", { page: tmdbPage }).catch(() => ({ results: [] })),
       // Top rated Indian (rotating page)
       tmdbFetch("/discover/movie", {
-        with_original_language: INDIAN_LANGS,
+        with_original_language: langs,
+        ...(genre ? { with_genres: genre } : {}),
         sort_by: "vote_average.desc", "vote_count.gte": "300",
-        include_adult: "false", page: String(page),
+        include_adult: "false", page: tmdbPage,
       }).catch(() => ({ results: [] })),
     ]);
 
@@ -77,10 +93,11 @@ serve(async (req) => {
       for (const m of (s.results || [])) {
         if (!m || seen.has(m.id) || excludeSet.has(m.id)) continue;
         // Indian-only filter for trending stream
-        if (!m.original_language || !INDIAN_LANGS.split("|").includes(m.original_language)) {
+        if (!m.original_language || !langs.split("|").includes(m.original_language)) {
           // allow English only if user shows interest
           if (!(interests[`lang:${m.original_language}`] > 0)) continue;
         }
+        if (genre && !(m.genre_ids || []).some((g: number) => genre.split("|").includes(String(g)))) continue;
         seen.add(m.id);
         pool.push(m);
       }
@@ -102,7 +119,7 @@ serve(async (req) => {
     // Diversity: avoid same language back-to-back
     const ordered: any[] = [];
     const remaining = [...scored];
-    while (remaining.length && ordered.length < 12) {
+    while (remaining.length) {
       const lastLang = ordered[ordered.length - 1]?.original_language;
       const idx = remaining.findIndex((x) => x.m.original_language !== lastLang);
       const pick = idx >= 0 ? remaining.splice(idx, 1)[0] : remaining.shift()!;

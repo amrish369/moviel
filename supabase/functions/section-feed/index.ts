@@ -23,6 +23,10 @@ const CATEGORY_LANG: Record<string, string> = {
 const MOOD_GENRE: Record<string, string> = {
   Action: "28", Comedy: "35", Thriller: "53", Romance: "10749", Emotional: "18",
 };
+const TV_MOOD_GENRE: Record<string, string> = {
+  Action: "10759", Comedy: "35", Thriller: "80|9648", Romance: "18", Emotional: "18",
+};
+const matchesGenre = (ids: number[] = [], genre?: string) => !genre || genre.split("|").some((g) => ids.includes(Number(g)));
 
 function tmdbAuth() {
   const key = Deno.env.get("TMDB_API_KEY") || "";
@@ -71,19 +75,25 @@ async function discover(opts: {
   page: number; langs: string; genre?: string; sortBy?: string;
   startDate?: string; endDate?: string; minVotes?: number;
 }) {
+  const requestedPage = Math.max(1, opts.page || 1);
   const params: Record<string, string> = {
     with_original_language: opts.langs,
     sort_by: opts.sortBy || "popularity.desc",
     include_adult: "false",
     "vote_count.gte": String(opts.minVotes ?? 0),
-    page: String(opts.page),
+    page: String(((requestedPage - 1) % 500) + 1),
   };
   if (opts.genre) params.with_genres = opts.genre;
   if (opts.startDate) params["primary_release_date.gte"] = opts.startDate;
   if (opts.endDate) params["primary_release_date.lte"] = opts.endDate;
   try {
-    const data = await tmdbFetch("/discover/movie", params);
-    return { results: data.results || [], totalPages: Math.min(data.total_pages || 1, 500) };
+    let data = await tmdbFetch("/discover/movie", params);
+    const totalPages = Math.min(data.total_pages || 1, 500);
+    if ((!data.results || data.results.length === 0) && totalPages > 0) {
+      params.page = String(((requestedPage - 1) % totalPages) + 1);
+      data = await tmdbFetch("/discover/movie", params);
+    }
+    return { results: data.results || [], totalPages };
   } catch (e) {
     console.error("discover failed", e);
     return { results: [], totalPages: 0 };
@@ -97,12 +107,13 @@ serve(async (req) => {
     if (!Deno.env.get("TMDB_API_KEY")) throw new Error("TMDB_API_KEY not configured");
     const body = await req.json().catch(() => ({}));
     const section = String(body.section || "daily");
-    const page = Math.max(1, Math.min(500, Number(body.page) || 1));
+    const page = Math.max(1, Math.min(5000, Number(body.page) || 1));
     const mood = body.mood && body.mood !== "Mixed" ? String(body.mood) : null;
     const category = body.category && body.category !== "All" ? String(body.category) : null;
 
     const langs = (category && CATEGORY_LANG[category]) || INDIAN_LANGS;
     const genre = mood ? MOOD_GENRE[mood] : undefined;
+    const tvGenre = mood ? TV_MOOD_GENRE[mood] : undefined;
 
     const today = new Date();
     const todayStr = fmtDate(today);
@@ -148,26 +159,39 @@ serve(async (req) => {
       totalPages = r.totalPages;
     } else if (section === "trending-india") {
       try {
-        const data = await tmdbFetch(`/trending/movie/week`, { page: String(page) });
+        const data = await tmdbFetch(`/trending/movie/week`, { page: String(((page - 1) % 500) + 1) });
         items = (data.results || [])
           .filter((m: any) => (langs).split("|").includes(m.original_language))
+          .filter((m: any) => matchesGenre(m.genre_ids || [], genre))
           .map(mapMovie);
-        totalPages = Math.min(data.total_pages || 1, 100);
+        totalPages = Math.min(data.total_pages || 1, 500);
       } catch { items = []; }
     } else if (section === "trending-worldwide") {
       try {
-        const data = await tmdbFetch(`/trending/movie/week`, { page: String(page) });
-        items = (data.results || []).map(mapMovie);
-        totalPages = Math.min(data.total_pages || 1, 100);
+        const data = await tmdbFetch(`/trending/movie/week`, { page: String(((page - 1) % 500) + 1) });
+        items = (data.results || []).filter((m: any) => matchesGenre(m.genre_ids || [], genre)).map(mapMovie);
+        totalPages = Math.min(data.total_pages || 1, 500);
       } catch { items = []; }
     } else if (section === "webseries-released") {
-      const data = await tmdbFetch("/discover/tv", {
+      let data = await tmdbFetch("/discover/tv", {
         with_original_language: langs,
+        ...(tvGenre ? { with_genres: tvGenre } : {}),
         "first_air_date.gte": fmtDate(new Date(today.getTime() - 365 * 86400000)),
         "first_air_date.lte": todayStr,
         sort_by: "popularity.desc", include_adult: "false",
-        "vote_count.gte": "3", page: String(page),
+        "vote_count.gte": "1", page: String(((page - 1) % 500) + 1),
       }).catch(() => ({ results: [], total_pages: 0 }));
+      const tvPages = Math.min(data.total_pages || 1, 500);
+      if ((!data.results || data.results.length === 0) && tvPages > 0) {
+        data = await tmdbFetch("/discover/tv", {
+          with_original_language: langs,
+          ...(tvGenre ? { with_genres: tvGenre } : {}),
+          "first_air_date.gte": fmtDate(new Date(today.getTime() - 365 * 86400000)),
+          "first_air_date.lte": todayStr,
+          sort_by: "popularity.desc", include_adult: "false",
+          "vote_count.gte": "1", page: String(((page - 1) % tvPages) + 1),
+        }).catch(() => ({ results: [], total_pages: 0 }));
+      }
       items = (data.results || []).map((s: any) => ({
         id: s.id, title: s.name || s.original_name, overview: s.overview || "",
         poster: s.poster_path ? `https://image.tmdb.org/t/p/w500${s.poster_path}` : null,
@@ -177,15 +201,27 @@ serve(async (req) => {
         firstAirDate: s.first_air_date || null,
         year: s.first_air_date ? parseInt(s.first_air_date.substring(0, 4)) : null,
       }));
-      totalPages = Math.min(data.total_pages || 1, 200);
+      totalPages = tvPages;
     } else if (section === "webseries-upcoming") {
-      const data = await tmdbFetch("/discover/tv", {
+      let data = await tmdbFetch("/discover/tv", {
         with_original_language: langs,
+        ...(tvGenre ? { with_genres: tvGenre } : {}),
         "first_air_date.gte": todayStr,
         "first_air_date.lte": next180,
         sort_by: "popularity.desc", include_adult: "false",
-        page: String(page),
+        page: String(((page - 1) % 500) + 1),
       }).catch(() => ({ results: [], total_pages: 0 }));
+      const tvPages = Math.min(data.total_pages || 1, 500);
+      if ((!data.results || data.results.length === 0) && tvPages > 0) {
+        data = await tmdbFetch("/discover/tv", {
+          with_original_language: langs,
+          ...(tvGenre ? { with_genres: tvGenre } : {}),
+          "first_air_date.gte": todayStr,
+          "first_air_date.lte": next180,
+          sort_by: "popularity.desc", include_adult: "false",
+          page: String(((page - 1) % tvPages) + 1),
+        }).catch(() => ({ results: [], total_pages: 0 }));
+      }
       items = (data.results || []).map((s: any) => ({
         id: s.id, title: s.name || s.original_name, overview: s.overview || "",
         poster: s.poster_path ? `https://image.tmdb.org/t/p/w500${s.poster_path}` : null,
@@ -195,7 +231,7 @@ serve(async (req) => {
         firstAirDate: s.first_air_date || null,
         year: s.first_air_date ? parseInt(s.first_air_date.substring(0, 4)) : null,
       }));
-      totalPages = Math.min(data.total_pages || 1, 200);
+      totalPages = tvPages;
     } else {
       return new Response(JSON.stringify({ error: "Unknown section", items: [], hasMore: false }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -203,7 +239,7 @@ serve(async (req) => {
     }
 
     return new Response(JSON.stringify({
-      items, page, hasMore: page < totalPages && items.length > 0,
+      items, page, hasMore: page < 5000,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error) {
     console.error(error);

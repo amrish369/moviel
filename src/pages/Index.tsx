@@ -362,10 +362,10 @@ const Index = () => {
         {!showSearchResults && (
           <>
             {activeSection === "for-you-feed" && (
-              <InfiniteFeed />
+              <InfiniteFeed mood={mood} category={category} />
             )}
             {activeSection === "trailer-reels" && (
-              <section id="trailer-reels"><TrailerReels /></section>
+              <section id="trailer-reels"><TrailerReels mood={mood} category={category} /></section>
             )}
             {activeSection === "web-series" && (
               <section id="web-series" className="scroll-mt-24"><WebSeriesSection mood={mood} category={category} /></section>

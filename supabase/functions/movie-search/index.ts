@@ -44,9 +44,25 @@ function levenshtein(a: string, b: string): number {
   return dp[m][n];
 }
 function similarity(a: string, b: string): number {
-  const dist = levenshtein(a, b);
-  const maxLen = Math.max(a.length, b.length) || 1;
+  const aa = normalizeTitle(a);
+  const bb = normalizeTitle(b);
+  const dist = levenshtein(aa, bb);
+  const maxLen = Math.max(aa.length, bb.length) || 1;
   return 1 - dist / maxLen;
+}
+
+function normalizeTitle(s: string): string {
+  return (s || "")
+    .toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/sh/g, "s")
+    .replace(/([bcdfgjklmnpqrstvwxyz])h/g, "$1")
+    .replace(/aa/g, "a")
+    .replace(/ee/g, "i")
+    .replace(/oo/g, "u")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 const LANG_MAP: Record<string, string> = {
@@ -93,6 +109,10 @@ function fuzzyVariants(q: string): string[] {
   const trimmed = q.trim();
   const words = trimmed.split(/\s+/).filter(Boolean);
   const variants = new Set<string>();
+  const normalized = normalizeTitle(trimmed);
+  if (normalized && normalized !== trimmed.toLowerCase()) variants.add(normalized);
+  variants.add(trimmed.replace(/sh/gi, "s"));
+  variants.add(trimmed.replace(/h/gi, ""));
   if (trimmed.length > 3) variants.add(trimmed.slice(0, -1));
   if (trimmed.length > 4) variants.add(trimmed.slice(0, -2));
   if (words.length > 1) {
@@ -101,7 +121,41 @@ function fuzzyVariants(q: string): string[] {
     variants.add(words[0]);
   }
   if (trimmed.length > 5) variants.add(trimmed.slice(0, Math.ceil(trimmed.length * 0.7)));
-  return Array.from(variants).filter(Boolean);
+  return Array.from(variants).map((v) => v.trim()).filter((v) => v && v.toLowerCase() !== trimmed.toLowerCase());
+}
+
+function uniqueResults(results: any[]) {
+  const seen = new Set<string>();
+  return results.filter((r) => {
+    const key = `${r.media_type}:${r.id}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+async function fuzzyCandidatePool(q: string) {
+  const streams = await Promise.all([
+    tmdbFetch("/trending/all/week", { page: "1" }).catch(() => ({ results: [] })),
+    tmdbFetch("/movie/popular", { page: "1" }).catch(() => ({ results: [] })),
+    tmdbFetch("/tv/popular", { page: "1" }).catch(() => ({ results: [] })),
+    tmdbFetch("/discover/movie", { with_original_language: "hi|ta|te|ml|kn|bn|mr|pa", sort_by: "popularity.desc", include_adult: "false", page: "1" }).catch(() => ({ results: [] })),
+    tmdbFetch("/discover/tv", { with_original_language: "hi|ta|te|ml|kn|bn|mr|pa", sort_by: "popularity.desc", include_adult: "false", page: "1" }).catch(() => ({ results: [] })),
+  ]);
+  const pool: any[] = [];
+  for (const stream of streams) {
+    for (const r of (stream.results || [])) {
+      const media_type = r.media_type || (r.title ? "movie" : "tv");
+      if (media_type !== "movie" && media_type !== "tv") continue;
+      const withType = { ...r, media_type };
+      const title = media_type === "tv" ? (withType.name || withType.original_name || "") : (withType.title || withType.original_title || "");
+      const sim = similarity(q, title);
+      const nq = normalizeTitle(q);
+      const nt = normalizeTitle(title);
+      if (sim >= 0.48 || nt.includes(nq) || nq.includes(nt)) pool.push(withType);
+    }
+  }
+  return uniqueResults(pool);
 }
 
 serve(async (req) => {
@@ -117,12 +171,16 @@ serve(async (req) => {
     if (!Deno.env.get("TMDB_API_KEY")) throw new Error("TMDB_API_KEY not configured");
 
     const q = query.trim();
-    let raw = await searchMulti(q);
+    const variantQueries = fuzzyVariants(q).slice(0, 5);
+    let raw = uniqueResults([
+      ...(await searchMulti(q)),
+      ...(await Promise.all(variantQueries.map((variant) => searchMulti(variant)))).flat(),
+    ]);
     let didYouMean: string | null = null;
 
     if (raw.length === 0) {
-      for (const variant of fuzzyVariants(q)) {
-        const r = await searchMulti(variant);
+      for (const variant of variantQueries) {
+        const r = uniqueResults(await searchMulti(variant));
         if (r.length > 0) {
           raw = r;
           didYouMean = variant;
@@ -130,6 +188,7 @@ serve(async (req) => {
         }
       }
     }
+    if (raw.length === 0) raw = await fuzzyCandidatePool(q);
 
     // Rank: blend title similarity with popularity so close matches win.
     const scored = raw.map((r: any) => {
@@ -138,8 +197,11 @@ serve(async (req) => {
       const score = sim * 100 + Math.log10((item.popularity || 0) + 1) * 5;
       return { item, sim, score };
     }).sort((a, b) => b.score - a.score);
+    if (!didYouMean && scored[0] && scored[0].sim < 0.92 && scored[0].sim >= 0.48) {
+      didYouMean = scored[0].item.title;
+    }
 
-    const top = scored.slice(0, 12);
+    const top = scored.filter((s) => s.sim >= 0.28 || scored.length <= 5).slice(0, 20);
 
     const detailed = await Promise.all(top.map(async ({ item }) => {
       try {

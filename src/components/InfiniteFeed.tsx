@@ -107,7 +107,7 @@ const FeedCard = ({ item, liked, saved, onLike, onSave }: {
   );
 };
 
-const InfiniteFeed = () => {
+const InfiniteFeed = ({ mood, category }: { mood?: string; category?: string }) => {
   const { likes, watchlist, toggleLike, toggleWatchlist } = useUserLibrary();
   const [items, setItems] = useState<FeedItem[]>([]);
   const [page, setPage] = useState(1);
@@ -121,27 +121,41 @@ const InfiniteFeed = () => {
     if (loading || !hasMore) return;
     setLoading(true); setError(null);
     try {
-      const excludeIds = Array.from(new Set([...getViewedIds(), ...Array.from(seenRef.current)]));
+      const excludeIds = Array.from(new Set(getViewedIds())).slice(0, 200);
       const interests = getInterests();
       const { data, error: fnErr } = await supabase.functions.invoke("feed", {
-        body: { page, excludeIds, interests },
+        body: { page, excludeIds, interests, mood, category },
       });
       if (fnErr) throw fnErr;
-      const incoming: FeedItem[] = (data?.items || []).filter((m: FeedItem) => !seenRef.current.has(m.id));
+      const rawItems: FeedItem[] = data?.items || [];
+      let incoming: FeedItem[] = rawItems.filter((m: FeedItem) => !seenRef.current.has(m.id));
+      if (incoming.length === 0 && rawItems.length > 0) {
+        seenRef.current = new Set();
+        incoming = rawItems.filter((m, index, arr) => arr.findIndex((x) => x.id === m.id) === index);
+      }
       incoming.forEach((m) => seenRef.current.add(m.id));
       setItems((prev) => [...prev, ...incoming]);
-      setHasMore(Boolean(data?.hasMore) && incoming.length > 0 && page < 500);
+      setHasMore(data?.hasMore !== false && page < 5000);
       setPage((p) => p + 1);
     } catch (e: any) {
       setError(e?.message || "Could not load more");
-      setHasMore(false);
+      setHasMore(true);
     } finally {
       setLoading(false);
     }
-  }, [loading, hasMore, page]);
+  }, [loading, hasMore, page, mood, category]);
 
-  // initial load
-  useEffect(() => { loadMore(); /* eslint-disable-next-line */ }, []);
+  useEffect(() => {
+    seenRef.current = new Set();
+    setItems([]);
+    setPage(1);
+    setHasMore(true);
+    setError(null);
+  }, [mood, category]);
+
+  useEffect(() => {
+    if (items.length === 0 && hasMore && !loading) loadMore();
+  }, [items.length, hasMore, loading, loadMore]);
 
   // Intersection Observer for infinite scroll (preloads ~5 ahead via rootMargin)
   useEffect(() => {
