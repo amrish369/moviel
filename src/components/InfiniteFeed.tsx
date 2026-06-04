@@ -130,11 +130,11 @@ const InfiniteFeed = () => {
       const incoming: FeedItem[] = (data?.items || []).filter((m: FeedItem) => !seenRef.current.has(m.id));
       incoming.forEach((m) => seenRef.current.add(m.id));
       setItems((prev) => [...prev, ...incoming]);
-      setHasMore(Boolean(data?.hasMore) && incoming.length > 0 && page < 500);
+      setHasMore(data?.hasMore !== false && page < 5000);
       setPage((p) => p + 1);
     } catch (e: any) {
       setError(e?.message || "Could not load more");
-      setHasMore(false);
+      setHasMore(true);
     } finally {
       setLoading(false);
     }
