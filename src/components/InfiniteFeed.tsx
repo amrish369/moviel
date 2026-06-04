@@ -107,7 +107,7 @@ const FeedCard = ({ item, liked, saved, onLike, onSave }: {
   );
 };
 
-const InfiniteFeed = () => {
+const InfiniteFeed = ({ mood, category }: { mood?: string; category?: string }) => {
   const { likes, watchlist, toggleLike, toggleWatchlist } = useUserLibrary();
   const [items, setItems] = useState<FeedItem[]>([]);
   const [page, setPage] = useState(1);
@@ -124,7 +124,7 @@ const InfiniteFeed = () => {
       const excludeIds = Array.from(new Set(getViewedIds())).slice(0, 200);
       const interests = getInterests();
       const { data, error: fnErr } = await supabase.functions.invoke("feed", {
-        body: { page, excludeIds, interests },
+        body: { page, excludeIds, interests, mood, category },
       });
       if (fnErr) throw fnErr;
       const rawItems: FeedItem[] = data?.items || [];
@@ -143,7 +143,15 @@ const InfiniteFeed = () => {
     } finally {
       setLoading(false);
     }
-  }, [loading, hasMore, page]);
+  }, [loading, hasMore, page, mood, category]);
+
+  useEffect(() => {
+    seenRef.current = new Set();
+    setItems([]);
+    setPage(1);
+    setHasMore(true);
+    setError(null);
+  }, [mood, category]);
 
   // initial load
   useEffect(() => { loadMore(); /* eslint-disable-next-line */ }, []);
