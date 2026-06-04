@@ -134,7 +134,7 @@ const ReelCard = ({ trailer, active, muted, onToggleMute }: {
   );
 };
 
-const TrailerReels = () => {
+const TrailerReels = ({ mood, category }: { mood?: string; category?: string }) => {
   const [trailers, setTrailers] = useState<Trailer[]>([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -150,7 +150,7 @@ const TrailerReels = () => {
       const refresh = !!opts?.refresh;
       const excludeIds = refresh ? [] : trailers.map(t => t.id);
       const { data, error } = await supabase.functions.invoke("trailers", {
-        body: { page: refresh ? 1 : page, excludeIds, refresh },
+        body: { page: refresh ? 1 : page, excludeIds, refresh, mood, category },
       });
       if (error) throw error;
       const items = (data?.items || []) as Trailer[];
@@ -168,7 +168,13 @@ const TrailerReels = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, trailers, loading]);
+  }, [page, trailers, loading, mood, category]);
+
+  useEffect(() => {
+    setTrailers([]);
+    setPage(1);
+    setActiveIdx(0);
+  }, [mood, category]);
 
   useEffect(() => { loadMore(); /* initial */ }, []);
 
