@@ -171,12 +171,12 @@ serve(async (req) => {
     if (!Deno.env.get("TMDB_API_KEY")) throw new Error("TMDB_API_KEY not configured");
 
     const q = query.trim();
-    let raw = await searchMulti(q);
+    let raw = uniqueResults(await searchMulti(q));
     let didYouMean: string | null = null;
 
     if (raw.length === 0) {
       for (const variant of fuzzyVariants(q)) {
-        const r = await searchMulti(variant);
+        const r = uniqueResults(await searchMulti(variant));
         if (r.length > 0) {
           raw = r;
           didYouMean = variant;
@@ -184,6 +184,7 @@ serve(async (req) => {
         }
       }
     }
+    if (raw.length === 0) raw = await fuzzyCandidatePool(q);
 
     // Rank: blend title similarity with popularity so close matches win.
     const scored = raw.map((r: any) => {
@@ -192,8 +193,11 @@ serve(async (req) => {
       const score = sim * 100 + Math.log10((item.popularity || 0) + 1) * 5;
       return { item, sim, score };
     }).sort((a, b) => b.score - a.score);
+    if (!didYouMean && scored[0] && scored[0].sim < 0.92 && scored[0].sim >= 0.48) {
+      didYouMean = scored[0].item.title;
+    }
 
-    const top = scored.slice(0, 12);
+    const top = scored.filter((s) => s.sim >= 0.28 || scored.length <= 5).slice(0, 20);
 
     const detailed = await Promise.all(top.map(async ({ item }) => {
       try {
