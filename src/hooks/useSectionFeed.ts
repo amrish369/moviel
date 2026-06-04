@@ -58,13 +58,13 @@ export function useSectionFeed(section: string, mood?: string, category?: string
         return true;
       });
       setItems((prev) => [...prev, ...incoming]);
-      // TMDB caps at 500 pages — keep loading until then so the feed feels endless.
-      setHasMore(Boolean(data?.hasMore) && page < 500);
+      // Keep asking the backend for virtual pages; it wraps/rotates sources when TMDB pages run out.
+      setHasMore(data?.hasMore !== false && page < 5000);
       setPage((p) => p + 1);
     } catch (e: any) {
       if (myId !== reqId.current) return;
       setError(e?.message || "Failed to load");
-      setHasMore(false);
+      setHasMore(true);
     } finally {
       if (myId === reqId.current) setLoading(false);
     }
