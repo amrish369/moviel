@@ -37,10 +37,10 @@ serve(async (req) => {
   try {
     if (!Deno.env.get("TMDB_API_KEY")) throw new Error("TMDB_API_KEY not configured");
     const body = await req.json().catch(() => ({}));
-    const requestedPage = Math.max(1, Math.min(50, Number(body.page) || 1));
+    const requestedPage = Math.max(1, Math.min(5000, Number(body.page) || 1));
     const refresh = Boolean(body.refresh);
     // On refresh, pick a random page within a wider window so the user sees fresh trailers
-    const page = refresh ? Math.floor(Math.random() * 8) + 1 : requestedPage;
+    const page = refresh ? Math.floor(Math.random() * 25) + 1 : ((requestedPage - 1) % 500) + 1;
     const excludeIds: number[] = Array.isArray(body.excludeIds) ? body.excludeIds : [];
     const excluded = new Set(excludeIds);
 
@@ -74,7 +74,7 @@ serve(async (req) => {
 
     const items: any[] = [];
     for (const m of pool) {
-      if (items.length >= 10) break;
+      if (items.length >= 16) break;
       try {
         const videos = await tmdbFetch(`/movie/${m.id}/videos`);
         const yt = (videos.results || []).filter((v: any) => v.site === "YouTube");
