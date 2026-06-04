@@ -52,9 +52,10 @@ export function useSectionFeed(section: string, mood?: string, category?: string
       });
       if (myId !== reqId.current) return; // stale
       if (fnErr) throw fnErr;
+      const batchSeen = new Set<number>();
       const incoming: SectionItem[] = (data?.items || []).filter((i: SectionItem) => {
-        if (seen.current.has(i.id)) return false;
-        seen.current.add(i.id);
+        if (batchSeen.has(i.id)) return false;
+        batchSeen.add(i.id);
         return true;
       });
       setItems((prev) => [...prev, ...incoming]);
