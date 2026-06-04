@@ -23,6 +23,9 @@ const CATEGORY_LANG: Record<string, string> = {
 const MOOD_GENRE: Record<string, string> = {
   Action: "28", Comedy: "35", Thriller: "53", Romance: "10749", Emotional: "18",
 };
+const TV_MOOD_GENRE: Record<string, string> = {
+  Action: "10759", Comedy: "35", Thriller: "80|9648", Romance: "18", Emotional: "18",
+};
 
 function tmdbAuth() {
   const key = Deno.env.get("TMDB_API_KEY") || "";
@@ -71,19 +74,25 @@ async function discover(opts: {
   page: number; langs: string; genre?: string; sortBy?: string;
   startDate?: string; endDate?: string; minVotes?: number;
 }) {
+  const requestedPage = Math.max(1, opts.page || 1);
   const params: Record<string, string> = {
     with_original_language: opts.langs,
     sort_by: opts.sortBy || "popularity.desc",
     include_adult: "false",
     "vote_count.gte": String(opts.minVotes ?? 0),
-    page: String(opts.page),
+    page: String(((requestedPage - 1) % 500) + 1),
   };
   if (opts.genre) params.with_genres = opts.genre;
   if (opts.startDate) params["primary_release_date.gte"] = opts.startDate;
   if (opts.endDate) params["primary_release_date.lte"] = opts.endDate;
   try {
-    const data = await tmdbFetch("/discover/movie", params);
-    return { results: data.results || [], totalPages: Math.min(data.total_pages || 1, 500) };
+    let data = await tmdbFetch("/discover/movie", params);
+    const totalPages = Math.min(data.total_pages || 1, 500);
+    if ((!data.results || data.results.length === 0) && totalPages > 0) {
+      params.page = String(((requestedPage - 1) % totalPages) + 1);
+      data = await tmdbFetch("/discover/movie", params);
+    }
+    return { results: data.results || [], totalPages };
   } catch (e) {
     console.error("discover failed", e);
     return { results: [], totalPages: 0 };
