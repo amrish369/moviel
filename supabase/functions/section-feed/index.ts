@@ -76,9 +76,14 @@ async function discover(opts: {
   startDate?: string; endDate?: string; minVotes?: number;
 }) {
   const requestedPage = Math.max(1, opts.page || 1);
+  const cycle = Math.floor((requestedPage - 1) / 500);
+  const SORTS = ["popularity.desc", "vote_average.desc", "primary_release_date.desc", "revenue.desc", "vote_count.desc"];
+  const baseSort = opts.sortBy || "popularity.desc";
+  // Keep caller's explicit sort on cycle 0; rotate on subsequent cycles for variance.
+  const effectiveSort = cycle === 0 ? baseSort : SORTS[(cycle + SORTS.indexOf(baseSort) + 1) % SORTS.length];
   const params: Record<string, string> = {
     with_original_language: opts.langs,
-    sort_by: opts.sortBy || "popularity.desc",
+    sort_by: effectiveSort,
     include_adult: "false",
     "vote_count.gte": String(opts.minVotes ?? 0),
     page: String(((requestedPage - 1) % 500) + 1),
@@ -110,6 +115,8 @@ serve(async (req) => {
     const page = Math.max(1, Math.min(5000, Number(body.page) || 1));
     const mood = body.mood && body.mood !== "Mixed" ? String(body.mood) : null;
     const category = body.category && body.category !== "All" ? String(body.category) : null;
+    const excludeIds: number[] = Array.isArray(body.excludeIds) ? body.excludeIds.slice(0, 500) : [];
+    const excludeSet = new Set<number>(excludeIds);
 
     const langs = (category && CATEGORY_LANG[category]) || INDIAN_LANGS;
     const genre = mood ? MOOD_GENRE[mood] : undefined;
@@ -239,7 +246,9 @@ serve(async (req) => {
     }
 
     return new Response(JSON.stringify({
-      items, page, hasMore: page < 5000,
+      items: items.filter((it: any) => it && !excludeSet.has(it.id)),
+      page,
+      hasMore: page < 5000,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error) {
     console.error(error);
