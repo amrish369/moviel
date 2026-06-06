@@ -120,22 +120,28 @@ const InfiniteFeed = ({ mood, category }: { mood?: string; category?: string }) 
   const loadMore = useCallback(async () => {
     if (loading || !hasMore) return;
     setLoading(true); setError(null);
+    const traceId = Math.random().toString(36).slice(2, 8);
+    const tStart = performance.now();
     try {
       const interests = getInterests();
       let attempt = 0;
       let cursor = page;
       let collected: FeedItem[] = [];
       let serverHasMore = true;
+      let totalRaw = 0;
+      let lastServerMetrics: any = null;
       while (attempt < 5 && collected.length === 0 && cursor < 5000) {
         const viewedExcl = Array.from(new Set(getViewedIds())).slice(0, 150);
         const sessionExcl = Array.from(seenRef.current).slice(-300);
         const excludeIds = Array.from(new Set([...viewedExcl, ...sessionExcl])).slice(0, 500);
         const { data, error: fnErr } = await supabase.functions.invoke("feed", {
-          body: { page: cursor, excludeIds, interests, mood, category },
+          body: { page: cursor, excludeIds, interests, mood, category, reqId: traceId },
         });
         if (fnErr) throw fnErr;
         serverHasMore = data?.hasMore !== false;
         const raw: FeedItem[] = data?.items || [];
+        lastServerMetrics = data?.metrics || null;
+        totalRaw += raw.length;
         for (const m of raw) {
           if (!m || seenRef.current.has(m.id)) continue;
           seenRef.current.add(m.id);
@@ -147,6 +153,17 @@ const InfiniteFeed = ({ mood, category }: { mood?: string; category?: string }) 
       if (collected.length > 0) setItems((prev) => [...prev, ...collected]);
       setHasMore(serverHasMore && cursor < 5000);
       setPage(cursor);
+      const dup = totalRaw - collected.length;
+      console.log("[InfiniteFeed]", JSON.stringify({
+        traceId, mood, category,
+        startPage: page, endPage: cursor, attempts: attempt,
+        rawTotal: totalRaw, newAdded: collected.length,
+        dupDropped: dup, dupRatio: totalRaw ? +(dup / totalRaw).toFixed(2) : 0,
+        seenAfter: seenRef.current.size,
+        hasMore: serverHasMore && cursor < 5000,
+        ms: Math.round(performance.now() - tStart),
+        serverMetrics: lastServerMetrics,
+      }));
     } catch (e: any) {
       setError(e?.message || "Could not load more");
       setHasMore(true);
