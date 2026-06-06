@@ -121,22 +121,32 @@ const InfiniteFeed = ({ mood, category }: { mood?: string; category?: string }) 
     if (loading || !hasMore) return;
     setLoading(true); setError(null);
     try {
-      const excludeIds = Array.from(new Set(getViewedIds())).slice(0, 200);
       const interests = getInterests();
-      const { data, error: fnErr } = await supabase.functions.invoke("feed", {
-        body: { page, excludeIds, interests, mood, category },
-      });
-      if (fnErr) throw fnErr;
-      const rawItems: FeedItem[] = data?.items || [];
-      let incoming: FeedItem[] = rawItems.filter((m: FeedItem) => !seenRef.current.has(m.id));
-      if (incoming.length === 0 && rawItems.length > 0) {
-        seenRef.current = new Set();
-        incoming = rawItems.filter((m, index, arr) => arr.findIndex((x) => x.id === m.id) === index);
+      let attempt = 0;
+      let cursor = page;
+      let collected: FeedItem[] = [];
+      let serverHasMore = true;
+      while (attempt < 5 && collected.length === 0 && cursor < 5000) {
+        const viewedExcl = Array.from(new Set(getViewedIds())).slice(0, 150);
+        const sessionExcl = Array.from(seenRef.current).slice(-300);
+        const excludeIds = Array.from(new Set([...viewedExcl, ...sessionExcl])).slice(0, 500);
+        const { data, error: fnErr } = await supabase.functions.invoke("feed", {
+          body: { page: cursor, excludeIds, interests, mood, category },
+        });
+        if (fnErr) throw fnErr;
+        serverHasMore = data?.hasMore !== false;
+        const raw: FeedItem[] = data?.items || [];
+        for (const m of raw) {
+          if (!m || seenRef.current.has(m.id)) continue;
+          seenRef.current.add(m.id);
+          collected.push(m);
+        }
+        cursor += 1;
+        attempt += 1;
       }
-      incoming.forEach((m) => seenRef.current.add(m.id));
-      setItems((prev) => [...prev, ...incoming]);
-      setHasMore(data?.hasMore !== false && page < 5000);
-      setPage((p) => p + 1);
+      if (collected.length > 0) setItems((prev) => [...prev, ...collected]);
+      setHasMore(serverHasMore && cursor < 5000);
+      setPage(cursor);
     } catch (e: any) {
       setError(e?.message || "Could not load more");
       setHasMore(true);
