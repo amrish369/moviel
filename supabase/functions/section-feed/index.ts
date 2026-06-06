@@ -117,6 +117,8 @@ serve(async (req) => {
     const category = body.category && body.category !== "All" ? String(body.category) : null;
     const excludeIds: number[] = Array.isArray(body.excludeIds) ? body.excludeIds.slice(0, 500) : [];
     const excludeSet = new Set<number>(excludeIds);
+    const reqId = (body.reqId as string) || crypto.randomUUID().slice(0, 8);
+    const t0 = Date.now();
 
     const langs = (category && CATEGORY_LANG[category]) || INDIAN_LANGS;
     const genre = mood ? MOOD_GENRE[mood] : undefined;
@@ -245,10 +247,20 @@ serve(async (req) => {
       });
     }
 
+    const rawCount = items.length;
+    const filtered = items.filter((it: any) => it && !excludeSet.has(it.id));
+    const droppedByExclude = rawCount - filtered.length;
+    const metrics = {
+      reqId, section, page, mood, category,
+      excludeCount: excludeIds.length,
+      rawCount, returnedCount: filtered.length,
+      droppedByExclude,
+      dupRatio: rawCount ? +(droppedByExclude / rawCount).toFixed(2) : 0,
+      ms: Date.now() - t0,
+    };
+    console.log("[section-feed]", JSON.stringify(metrics));
     return new Response(JSON.stringify({
-      items: items.filter((it: any) => it && !excludeSet.has(it.id)),
-      page,
-      hasMore: page < 5000,
+      items: filtered, page, hasMore: page < 5000, metrics,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error) {
     console.error(error);
