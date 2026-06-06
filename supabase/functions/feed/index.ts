@@ -52,6 +52,10 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const page: number = Math.max(1, Math.min(5000, Number(body.page) || 1));
     const tmdbPage = String(((page - 1) % 500) + 1);
+    const cycle = Math.floor((page - 1) / 500);
+    // Rotate sort each 500-page cycle so wrapped pages return different content
+    const SORTS = ["popularity.desc", "vote_average.desc", "primary_release_date.desc", "revenue.desc", "vote_count.desc"];
+    const cycleSort = SORTS[cycle % SORTS.length];
     const excludeIds: number[] = Array.isArray(body.excludeIds) ? body.excludeIds.slice(0, 500) : [];
     const excludeSet = new Set<number>(excludeIds);
     const interests: Record<string, number> = body.interests || {}; // { "genre:28": 3, "lang:hi": 5 }
@@ -72,7 +76,7 @@ serve(async (req) => {
         ...(genre ? { with_genres: genre } : {}),
         "primary_release_date.gte": last120,
         "primary_release_date.lte": todayStr,
-        sort_by: "popularity.desc", include_adult: "false",
+        sort_by: cycleSort, include_adult: "false",
         "vote_count.gte": "5", page: tmdbPage,
       }).catch(() => ({ results: [] })),
       // Trending Indian (week)
@@ -81,7 +85,8 @@ serve(async (req) => {
       tmdbFetch("/discover/movie", {
         with_original_language: langs,
         ...(genre ? { with_genres: genre } : {}),
-        sort_by: "vote_average.desc", "vote_count.gte": "300",
+        sort_by: cycle % 2 === 0 ? "vote_average.desc" : "vote_count.desc",
+        "vote_count.gte": "300",
         include_adult: "false", page: tmdbPage,
       }).catch(() => ({ results: [] })),
     ]);
