@@ -47,21 +47,31 @@ export function useSectionFeed(section: string, mood?: string, category?: string
     setError(null);
     const myId = ++reqId.current;
     try {
-      const { data, error: fnErr } = await supabase.functions.invoke("section-feed", {
-        body: { section, page, mood, category },
-      });
-      if (myId !== reqId.current) return; // stale
-      if (fnErr) throw fnErr;
-      const batchSeen = new Set<number>();
-      const incoming: SectionItem[] = (data?.items || []).filter((i: SectionItem) => {
-        if (batchSeen.has(i.id)) return false;
-        batchSeen.add(i.id);
-        return true;
-      });
-      setItems((prev) => [...prev, ...incoming]);
-      // Keep asking the backend for virtual pages; it wraps/rotates sources when TMDB pages run out.
-      setHasMore(data?.hasMore !== false && page < 5000);
-      setPage((p) => p + 1);
+      // Walk forward through pages until we get NEW unique items (or hit retry cap).
+      let attempt = 0;
+      let cursor = page;
+      let collected: SectionItem[] = [];
+      let serverHasMore = true;
+      while (attempt < 5 && collected.length === 0 && cursor < 5000) {
+        const excludeIds = Array.from(seen.current).slice(-400);
+        const { data, error: fnErr } = await supabase.functions.invoke("section-feed", {
+          body: { section, page: cursor, mood, category, excludeIds },
+        });
+        if (myId !== reqId.current) return; // stale
+        if (fnErr) throw fnErr;
+        serverHasMore = data?.hasMore !== false;
+        const raw: SectionItem[] = data?.items || [];
+        for (const it of raw) {
+          if (!it || seen.current.has(it.id)) continue;
+          seen.current.add(it.id);
+          collected.push(it);
+        }
+        cursor += 1;
+        attempt += 1;
+      }
+      if (collected.length > 0) setItems((prev) => [...prev, ...collected]);
+      setHasMore(serverHasMore && cursor < 5000);
+      setPage(cursor);
     } catch (e: any) {
       if (myId !== reqId.current) return;
       setError(e?.message || "Failed to load");
