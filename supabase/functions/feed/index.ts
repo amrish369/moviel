@@ -51,6 +51,8 @@ serve(async (req) => {
     if (!Deno.env.get("TMDB_API_KEY")) throw new Error("TMDB_API_KEY not set");
     const body = await req.json().catch(() => ({}));
     const page: number = Math.max(1, Math.min(5000, Number(body.page) || 1));
+    const reqId = (body.reqId as string) || crypto.randomUUID().slice(0, 8);
+    const t0 = Date.now();
     const tmdbPage = String(((page - 1) % 500) + 1);
     const cycle = Math.floor((page - 1) / 500);
     // Rotate sort each 500-page cycle so wrapped pages return different content
@@ -94,9 +96,14 @@ serve(async (req) => {
     // Merge unique
     const seen = new Set<number>();
     const pool: any[] = [];
+    let droppedByExclude = 0;
+    let rawStreamCount = 0;
     for (const s of streams) {
       for (const m of (s.results || [])) {
-        if (!m || seen.has(m.id) || excludeSet.has(m.id)) continue;
+        if (!m) continue;
+        rawStreamCount++;
+        if (seen.has(m.id)) continue;
+        if (excludeSet.has(m.id)) { droppedByExclude++; continue; }
         // Indian-only filter for trending stream
         if (!m.original_language || !langs.split("|").includes(m.original_language)) {
           // allow English only if user shows interest
@@ -146,7 +153,17 @@ serve(async (req) => {
       releaseDate: m.release_date || null,
     }));
 
-    return new Response(JSON.stringify({ items, page, hasMore: items.length > 0 }), {
+    const metrics = {
+      reqId, page, mood, category,
+      excludeCount: excludeIds.length,
+      rawStreamCount, poolSize: pool.length,
+      returnedCount: items.length,
+      droppedByExclude,
+      dupRatio: rawStreamCount ? +(droppedByExclude / rawStreamCount).toFixed(2) : 0,
+      ms: Date.now() - t0,
+    };
+    console.log("[feed]", JSON.stringify(metrics));
+    return new Response(JSON.stringify({ items, page, hasMore: items.length > 0, metrics }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
