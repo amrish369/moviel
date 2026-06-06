@@ -46,32 +46,53 @@ export function useSectionFeed(section: string, mood?: string, category?: string
     setLoading(true);
     setError(null);
     const myId = ++reqId.current;
+    const traceId = Math.random().toString(36).slice(2, 8);
+    const tStart = performance.now();
     try {
       // Walk forward through pages until we get NEW unique items (or hit retry cap).
       let attempt = 0;
       let cursor = page;
       let collected: SectionItem[] = [];
       let serverHasMore = true;
+      let totalRaw = 0;
+      let totalDup = 0;
+      let lastServerMetrics: any = null;
       while (attempt < 5 && collected.length === 0 && cursor < 5000) {
         const excludeIds = Array.from(seen.current).slice(-400);
         const { data, error: fnErr } = await supabase.functions.invoke("section-feed", {
-          body: { section, page: cursor, mood, category, excludeIds },
+          body: { section, page: cursor, mood, category, excludeIds, reqId: traceId },
         });
         if (myId !== reqId.current) return; // stale
         if (fnErr) throw fnErr;
         serverHasMore = data?.hasMore !== false;
         const raw: SectionItem[] = data?.items || [];
+        lastServerMetrics = data?.metrics || null;
+        totalRaw += raw.length;
+        let dupThisPage = 0;
         for (const it of raw) {
           if (!it || seen.current.has(it.id)) continue;
           seen.current.add(it.id);
           collected.push(it);
         }
+        dupThisPage = raw.length - collected.length + (collected.length === 0 ? 0 : 0);
+        // Recompute dup precisely (raw - newly added during this iteration)
+        totalDup = totalRaw - collected.length;
         cursor += 1;
         attempt += 1;
       }
       if (collected.length > 0) setItems((prev) => [...prev, ...collected]);
       setHasMore(serverHasMore && cursor < 5000);
       setPage(cursor);
+      console.log("[useSectionFeed]", JSON.stringify({
+        traceId, section, mood, category,
+        startPage: page, endPage: cursor,
+        attempts: attempt, excludeSent: Math.min(seen.current.size, 400),
+        rawTotal: totalRaw, newAdded: collected.length, dupDropped: totalDup,
+        dupRatio: totalRaw ? +(totalDup / totalRaw).toFixed(2) : 0,
+        seenAfter: seen.current.size, hasMore: serverHasMore && cursor < 5000,
+        ms: Math.round(performance.now() - tStart),
+        serverMetrics: lastServerMetrics,
+      }));
     } catch (e: any) {
       if (myId !== reqId.current) return;
       setError(e?.message || "Failed to load");
