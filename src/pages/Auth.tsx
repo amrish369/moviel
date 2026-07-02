@@ -8,9 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Clapperboard, Loader2 } from "lucide-react";
+import { useNoIndex } from "@/lib/seo";
 
 const Auth = () => {
   const navigate = useNavigate();
+  useNoIndex("Sign in — CineRadar");
   const { user, loading } = useAuth();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
