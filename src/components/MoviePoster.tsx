@@ -68,6 +68,7 @@ const MoviePoster = ({ title, year, genre, size = "sm", className = "" }: MovieP
       alt={`${title} poster`}
       className={`${sizeClasses[size]} object-cover shrink-0 ${className}`}
       loading="lazy"
+      decoding="async"
       onError={() => setImgError(true)}
     />
   );

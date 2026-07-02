@@ -3,8 +3,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Bookmark, Trash2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { fetchWatchlistDetails, getLocalWatchlistIds, useUserLibrary } from "@/hooks/useUserLibrary";
+import { useNoIndex } from "@/lib/seo";
 
 const Watchlist = () => {
+  useNoIndex("Watch Later — CineRadar");
   const { user, loading } = useAuth();
   const { toggleWatchlist, watchlist } = useUserLibrary();
   const [items, setItems] = useState<any[]>([]);
