@@ -8,8 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useNoIndex } from "@/lib/seo";
 
 const Dashboard = () => {
+  useNoIndex("Your Dashboard — CineRadar");
   const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const { likes, watchlist } = useUserLibrary();
