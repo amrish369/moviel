@@ -99,7 +99,7 @@ const FeedCard = ({ item, liked, saved, onLike, onSave }: {
             {saved ? "Saved" : "Save"}
           </button>
           <DownloadButton movieTitle={item.title} />
-          <PlayOnTelegram tmdbId={item.id} title={item.title} />
+          <PlayOnTelegram title={item.title} year={item.year} />
           <span className="ml-auto text-[10px] uppercase tracking-wide text-muted-foreground">
             {item.popularity > 100 ? "Trending" : "For You"}
           </span>
