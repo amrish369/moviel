@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { Loader2, Music, Play, X } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 
 interface Song {
   videoId: string;
@@ -26,17 +25,6 @@ const MovieSongsReel = ({ title, year }: { title: string; year?: number | string
     setLoading(true);
     setError(null);
     (async () => {
-      try {
-        const { data, error } = await supabase.functions.invoke("movie-songs", {
-          method: "GET",
-          headers: {},
-          body: undefined,
-          // supabase-js doesn't forward query params, so call fetch directly
-        } as any);
-        // Fallback: direct fetch since functions.invoke prefers POST
-        void data; void error;
-      } catch { /* ignore */ }
-
       try {
         const projectId = (import.meta as any).env.VITE_SUPABASE_PROJECT_ID;
         const anonKey = (import.meta as any).env.VITE_SUPABASE_PUBLISHABLE_KEY;
