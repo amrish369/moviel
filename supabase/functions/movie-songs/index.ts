@@ -13,12 +13,39 @@ const YT_UA =
   'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36';
 
 function scrapeYouTubeSearch(html: string): Song[] {
-  // ytInitialData sits between `var ytInitialData = ` and `;</script>`
-  const marker = 'var ytInitialData = ';
-  const start = html.indexOf(marker);
-  if (start === -1) return [];
-  const jsonStart = start + marker.length;
-  const end = html.indexOf(';</script>', jsonStart);
+  // ytInitialData can be assigned via several patterns depending on YT rollout.
+  const markers = [
+    'var ytInitialData = ',
+    'window["ytInitialData"] = ',
+    "window['ytInitialData'] = ",
+    'ytInitialData = ',
+  ];
+  let jsonStart = -1;
+  for (const m of markers) {
+    const idx = html.indexOf(m);
+    if (idx !== -1) { jsonStart = idx + m.length; break; }
+  }
+  if (jsonStart === -1) return [];
+  // Find the end of the JSON object by walking braces (safer than string search).
+  let depth = 0;
+  let inStr = false;
+  let esc = false;
+  let end = -1;
+  for (let i = jsonStart; i < html.length; i++) {
+    const ch = html[i];
+    if (inStr) {
+      if (esc) { esc = false; continue; }
+      if (ch === '\\') { esc = true; continue; }
+      if (ch === '"') inStr = false;
+      continue;
+    }
+    if (ch === '"') { inStr = true; continue; }
+    if (ch === '{') depth++;
+    else if (ch === '}') {
+      depth--;
+      if (depth === 0) { end = i + 1; break; }
+    }
+  }
   if (end === -1) return [];
   let data: any;
   try {
