@@ -8,6 +8,7 @@ import {
 } from "@/hooks/useFeedTracking";
 import { useUserLibrary } from "@/hooks/useUserLibrary";
 import DownloadButton from "./DownloadButton";
+import PlayOnTelegram from "./PlayOnTelegram";
 
 interface FeedItem {
   id: number;
@@ -98,6 +99,7 @@ const FeedCard = ({ item, liked, saved, onLike, onSave }: {
             {saved ? "Saved" : "Save"}
           </button>
           <DownloadButton movieTitle={item.title} />
+          <PlayOnTelegram tmdbId={item.id} title={item.title} />
           <span className="ml-auto text-[10px] uppercase tracking-wide text-muted-foreground">
             {item.popularity > 100 ? "Trending" : "For You"}
           </span>
