@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      movie_streams: {
+        Row: {
+          created_at: string
+          slug: string | null
+          source: string
+          title: string | null
+          tmdb_id: number
+          updated_at: string
+          video_url: string
+        }
+        Insert: {
+          created_at?: string
+          slug?: string | null
+          source?: string
+          title?: string | null
+          tmdb_id: number
+          updated_at?: string
+          video_url: string
+        }
+        Update: {
+          created_at?: string
+          slug?: string | null
+          source?: string
+          title?: string | null
+          tmdb_id?: number
+          updated_at?: string
+          video_url?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

@@ -8,6 +8,7 @@ import { useMovieDetail } from "@/hooks/useMovieDetail";
 import { usePerfTracking } from "@/hooks/usePerfTracking";
 import MoviePoster from "@/components/MoviePoster";
 import DownloadButton from "@/components/DownloadButton";
+import MovieSongsReel from "@/components/MovieSongsReel";
 
 const MovieDetailPage = () => {
   const [searchParams] = useSearchParams();
@@ -222,6 +223,9 @@ const MovieDetailPage = () => {
             </div>
           </div>
         )}
+
+        {/* Songs from this movie (fetched from YouTube) */}
+        <MovieSongsReel title={movie.title} year={movie.year} />
 
         {/* Director & Writers */}
         <section className="glass-card rounded-xl p-5 space-y-4">
