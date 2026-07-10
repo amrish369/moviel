@@ -190,7 +190,7 @@ Deno.serve(async (req) => {
     const songs = rankSongs(all, title);
 
     return new Response(
-      JSON.stringify({ query: q, rawCount: all.length, count: songs.length, songs, htmlLen: html.length }),
+      JSON.stringify({ query: q, count: songs.length, songs }),
       {
         headers: {
           ...corsHeaders,
