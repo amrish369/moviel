@@ -148,6 +148,8 @@ Deno.serve(async (req) => {
       headers: {
         'User-Agent': YT_UA,
         'Accept-Language': 'en-US,en;q=0.9,hi;q=0.8',
+        'Cookie': 'CONSENT=YES+cb.20210328-17-p0.en+FX+000; SOCS=CAI',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
       },
     });
     if (!res.ok) {
@@ -161,7 +163,7 @@ Deno.serve(async (req) => {
     const songs = rankSongs(all, title);
 
     return new Response(
-      JSON.stringify({ query: q, count: songs.length, songs }),
+      JSON.stringify({ query: q, rawCount: all.length, count: songs.length, songs, htmlLen: html.length }),
       {
         headers: {
           ...corsHeaders,
