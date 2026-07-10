@@ -224,6 +224,9 @@ const MovieDetailPage = () => {
           </div>
         )}
 
+        {/* Songs from this movie (fetched from YouTube) */}
+        <MovieSongsReel title={movie.title} year={movie.year} />
+
         {/* Director & Writers */}
         <section className="glass-card rounded-xl p-5 space-y-4">
           <h2 className="font-display font-bold text-foreground flex items-center gap-2">
