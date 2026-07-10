@@ -10,7 +10,7 @@ interface Song {
 }
 
 const YT_UA =
-  'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36';
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36';
 
 function scrapeYouTubeSearch(html: string): Song[] {
   // ytInitialData can be assigned via several patterns depending on YT rollout.
@@ -169,7 +169,7 @@ Deno.serve(async (req) => {
     }
 
     const q = `${title} ${year} movie all songs jukebox`.trim();
-    const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}&sp=EgIQAQ%253D%253D`; // filter=Videos
+    const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}&sp=EgIQAQ%253D%253D&hl=en&gl=US&persist_hl=1&persist_gl=1`;
 
     const res = await fetch(searchUrl, {
       headers: {
