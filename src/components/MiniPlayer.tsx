@@ -14,15 +14,35 @@ const MiniPlayer = () => {
 
   const src = `https://www.youtube.com/embed/${current.videoId}?autoplay=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1&iv_load_policy=3`;
 
-  // Single persistent iframe. Its wrapper morphs between expanded (big) and collapsed (hidden offscreen).
-  const wrapperClass = expanded
-    ? "w-full max-w-2xl aspect-video rounded-2xl overflow-hidden bg-black shadow-2xl"
-    : "pointer-events-none opacity-0 absolute";
-  const wrapperStyle = expanded ? undefined : { width: 1, height: 1, left: -9999, top: -9999 };
+  // Single persistent iframe. Wrapper morphs based on expanded/showVideo.
+  // When expanded + showVideo: big centered video (fixed positioned).
+  // Otherwise: 1x1 offscreen (audio keeps playing).
+  const showBigVideo = expanded && showVideo;
+  const iframeWrapperStyle: React.CSSProperties = showBigVideo
+    ? {}
+    : { position: "fixed", left: -9999, top: -9999, width: 1, height: 1, opacity: 0, pointerEvents: "none", zIndex: -1 };
 
   return (
     <>
-      {/* Full-screen expanded player */}
+      {/* Persistent single iframe host */}
+      <div
+        className={showBigVideo ? "fixed inset-x-0 top-20 mx-auto z-[95] w-full max-w-2xl px-4" : ""}
+        style={iframeWrapperStyle}
+        aria-hidden={!showBigVideo}
+      >
+        <div className={showBigVideo ? "aspect-video rounded-2xl overflow-hidden bg-black shadow-2xl" : ""}>
+          <iframe
+            ref={iframeRef}
+            src={src}
+            title={current.title}
+            allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+            allowFullScreen
+            className={showBigVideo ? "w-full h-full border-0" : ""}
+          />
+        </div>
+      </div>
+
+      {/* Full-screen expanded UI */}
       {expanded && (
         <div className="fixed inset-0 z-[90] bg-background/95 backdrop-blur-xl flex flex-col">
           <div className="flex items-center justify-between p-4 border-b border-border">
@@ -34,37 +54,18 @@ const MiniPlayer = () => {
               <X className="w-5 h-5 text-foreground" />
             </button>
           </div>
-          <div className="flex-1 flex flex-col items-center justify-center px-4 gap-6 overflow-y-auto py-6">
-            <div className={showVideo ? wrapperClass : "hidden"}>
-              <iframe
-                ref={iframeRef}
-                src={src}
-                title={current.title}
-                allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-                allowFullScreen
-                className="w-full h-full border-0"
-              />
-            </div>
+          <div className="flex-1 flex flex-col items-center px-4 gap-6 overflow-y-auto py-6">
+            {/* Spacer for the fixed video above */}
+            {showVideo && <div className="w-full max-w-2xl aspect-video" />}
             {!showVideo && (
-              <>
-                <div className="w-64 h-64 rounded-2xl overflow-hidden shadow-2xl relative">
-                  <img src={current.thumbnail} alt={current.title} className="w-full h-full object-cover" />
-                  <div className={`absolute inset-0 flex items-center justify-center ${isPlaying ? "animate-pulse" : ""}`}>
-                    <div className="w-16 h-16 rounded-full bg-primary/80 backdrop-blur flex items-center justify-center">
-                      <Music className="w-7 h-7 text-primary-foreground" />
-                    </div>
+              <div className="w-64 h-64 rounded-2xl overflow-hidden shadow-2xl relative mt-6">
+                <img src={current.thumbnail} alt={current.title} className="w-full h-full object-cover" />
+                <div className={`absolute inset-0 flex items-center justify-center ${isPlaying ? "animate-pulse" : ""}`}>
+                  <div className="w-16 h-16 rounded-full bg-primary/80 backdrop-blur flex items-center justify-center">
+                    <Music className="w-7 h-7 text-primary-foreground" />
                   </div>
                 </div>
-                {/* keep iframe mounted, just hidden */}
-                <div className={wrapperClass} style={{ position: "absolute", left: -9999, top: -9999, width: 1, height: 1, opacity: 0, pointerEvents: "none" }}>
-                  <iframe
-                    ref={iframeRef}
-                    src={src}
-                    title={current.title}
-                    allow="autoplay; encrypted-media"
-                  />
-                </div>
-              </>
+              </div>
             )}
             <div className="text-center max-w-xl">
               <h2 className="font-display text-xl font-bold text-foreground line-clamp-2">{current.title}</h2>
@@ -89,21 +90,9 @@ const MiniPlayer = () => {
               {showVideo ? "Audio only" : "Show video"}
             </button>
             <p className="text-[10px] text-muted-foreground text-center max-w-md">
-              Audio background me chalta rahega jab tak app khula hai. Mobile me screen-off par YouTube pause kar sakta hai.
+              Audio background me chalta rahega jab tak app khula hai. Mobile screen-off par YouTube pause kar sakta hai.
             </p>
           </div>
-        </div>
-      )}
-
-      {/* Persistent hidden iframe when minimized so audio never stops on route change */}
-      {!expanded && (
-        <div aria-hidden style={{ position: "fixed", left: -9999, top: -9999, width: 1, height: 1, opacity: 0, pointerEvents: "none" }}>
-          <iframe
-            ref={iframeRef}
-            src={src}
-            title={current.title}
-            allow="autoplay; encrypted-media"
-          />
         </div>
       )}
 
