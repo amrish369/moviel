@@ -236,7 +236,7 @@ const Music = () => {
                   </button>
                   {s.channel && (
                     <Link
-                      to={`/artist?name=${encodeURIComponent(s.channel.replace(/\s*[-–]\s*topic\s*$/i, ""))}`}
+                      to={`/artist-music?name=${encodeURIComponent(s.channel.replace(/\s*[-–]\s*topic\s*$/i, ""))}`}
                       className="text-[10px] text-muted-foreground hover:text-primary inline-flex items-center gap-1 truncate max-w-full"
                     >
                       <User className="w-3 h-3" />
