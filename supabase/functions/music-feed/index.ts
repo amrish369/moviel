@@ -127,20 +127,70 @@ function scrapePlaylists(html: string): Playlist[] {
   try { data = JSON.parse(html.slice(jsonStart, end)); } catch { return []; }
   const out: Playlist[] = [];
   const seen = new Set<string>();
+
+  const deepFindString = (obj: any, key: string): string => {
+    if (!obj || typeof obj !== 'object') return '';
+    if (typeof obj[key] === 'string') return obj[key];
+    for (const k of Object.keys(obj)) {
+      const v = (obj as any)[k];
+      if (v && typeof v === 'object') {
+        const r = deepFindString(v, key);
+        if (r) return r;
+      }
+    }
+    return '';
+  };
+
   const walk = (node: any) => {
     if (!node || typeof node !== 'object' || out.length >= 40) return;
     if (Array.isArray(node)) { for (const c of node) walk(c); return; }
-    const pr = node.playlistRenderer || node.lockupViewModel;
-    const pid = node.playlistRenderer?.playlistId;
-    if (pid && !seen.has(pid)) {
-      seen.add(pid);
+
+    // Legacy playlistRenderer
+    const pr = node.playlistRenderer;
+    if (pr?.playlistId && !seen.has(pr.playlistId)) {
+      seen.add(pr.playlistId);
       const title = pr.title?.simpleText || pr.title?.runs?.map((r: any) => r.text).join('') || '';
       const channel = pr.shortBylineText?.runs?.[0]?.text || pr.longBylineText?.runs?.[0]?.text || '';
       const thumbs = pr.thumbnails?.[0]?.thumbnails || pr.thumbnailRenderer?.playlistVideoThumbnailRenderer?.thumbnail?.thumbnails || [];
       const thumbnail = thumbs[thumbs.length - 1]?.url || `https://i.ytimg.com/vi/${pr.navigationEndpoint?.watchEndpoint?.videoId || ''}/hqdefault.jpg`;
       const videoCount = pr.videoCountText?.runs?.map((r: any) => r.text).join('') || pr.videoCountShortText?.simpleText || '';
-      if (title) out.push({ playlistId: pid, title, channel, thumbnail, videoCount });
+      if (title) out.push({ playlistId: pr.playlistId, title, channel, thumbnail, videoCount });
     }
+
+    // New lockupViewModel (YT 2024+)
+    const lv = node.lockupViewModel;
+    if (lv && typeof lv === 'object') {
+      const cid: string | undefined = lv.contentId;
+      const ctype: string | undefined = lv.contentType;
+      if (cid && !seen.has(cid) && (ctype === 'LOCKUP_CONTENT_TYPE_PLAYLIST' || /^(PL|OL|RD|UU|FL)/.test(cid))) {
+        seen.add(cid);
+        const title = deepFindString(lv.metadata, 'content') || deepFindString(lv, 'accessibilityText') || '';
+        // channel: first metadata row
+        let channel = '';
+        const rows = lv.metadata?.lockupMetadataViewModel?.metadata?.contentMetadataViewModel?.metadataRows;
+        if (Array.isArray(rows)) {
+          for (const r of rows) {
+            const parts = r?.metadataParts;
+            if (Array.isArray(parts)) {
+              for (const p of parts) {
+                const t = p?.text?.content;
+                if (t) { channel = t; break; }
+              }
+              if (channel) break;
+            }
+          }
+        }
+        // videoCount: overlay text often contains "42 videos"
+        const videoCount = deepFindString(lv.contentImage, 'text') || '';
+        // thumbnail
+        const sources = lv.contentImage?.collectionThumbnailViewModel?.primaryThumbnail?.thumbnailViewModel?.image?.sources
+          || lv.contentImage?.thumbnailViewModel?.image?.sources
+          || [];
+        const thumbnail = sources[sources.length - 1]?.url || `https://i.ytimg.com/vi/${cid}/hqdefault.jpg`;
+        if (title) out.push({ playlistId: cid, title, channel, thumbnail, videoCount });
+      }
+    }
+
     for (const k of Object.keys(node)) walk(node[k]);
   };
   walk(data);
