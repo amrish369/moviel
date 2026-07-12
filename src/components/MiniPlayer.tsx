@@ -12,7 +12,9 @@ const MiniPlayer = () => {
 
   if (!current) return null;
 
-  const src = `https://www.youtube.com/embed/${current.videoId}?autoplay=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1&iv_load_policy=3`;
+  const src = current.playlistId
+    ? `https://www.youtube.com/embed/videoseries?list=${current.playlistId}&autoplay=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1&iv_load_policy=3`
+    : `https://www.youtube.com/embed/${current.videoId}?autoplay=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1&iv_load_policy=3`;
 
   // Single persistent iframe. Wrapper morphs based on expanded/showVideo.
   // When expanded + showVideo: big centered video (fixed positioned).
