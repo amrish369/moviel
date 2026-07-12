@@ -7,6 +7,7 @@ export interface Song {
   thumbnail: string;
   duration?: string;
   views?: string;
+  playlistId?: string; // when set, iframe plays whole YT playlist
 }
 
 interface Ctx {
@@ -89,16 +90,63 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
       if (typeof ev.data !== "string") return;
       try {
         const data = JSON.parse(ev.data);
-        if (data.event === "onStateChange" && data.info === 0) {
-          // ended
-          if (queue.length > 1) next();
-          else setIsPlaying(false);
+        if (data.event === "onStateChange") {
+          // 0 = ended, 1 = playing, 2 = paused, 3 = buffering
+          if (data.info === 0) {
+            if (queue.length > 1) next();
+            else setIsPlaying(false);
+          } else if (data.info === 1) {
+            setIsPlaying(true);
+          } else if (data.info === 2) {
+            setIsPlaying(false);
+          }
         }
       } catch {}
     };
     window.addEventListener("message", onMsg);
     return () => window.removeEventListener("message", onMsg);
   }, [queue.length, next]);
+
+  // MediaSession API — lock-screen controls + hints to OS to keep audio alive
+  // when screen turns off (works on Android Chrome when the tab has audio focus).
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
+    if (!current) {
+      navigator.mediaSession.metadata = null;
+      navigator.mediaSession.playbackState = "none";
+      return;
+    }
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: current.title,
+        artist: current.channel,
+        album: "CineRadar Music",
+        artwork: [
+          { src: current.thumbnail, sizes: "512x512", type: "image/jpeg" },
+          { src: current.thumbnail, sizes: "256x256", type: "image/jpeg" },
+          { src: current.thumbnail, sizes: "96x96", type: "image/jpeg" },
+        ],
+      });
+      navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";
+      navigator.mediaSession.setActionHandler("play", () => { post("playVideo"); setIsPlaying(true); });
+      navigator.mediaSession.setActionHandler("pause", () => { post("pauseVideo"); setIsPlaying(false); });
+      navigator.mediaSession.setActionHandler("nexttrack", () => next());
+      navigator.mediaSession.setActionHandler("previoustrack", () => prev());
+    } catch {}
+  }, [current, isPlaying, post, next, prev]);
+
+  // Keep audio playing when the tab goes background / screen locks.
+  // Some Android Chrome versions pause a hidden iframe. Re-issue playVideo
+  // when we come back to foreground so playback resumes if paused.
+  useEffect(() => {
+    const onVis = () => {
+      if (document.visibilityState === "visible" && isPlaying) {
+        post("playVideo");
+      }
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, [isPlaying, post]);
 
   const registerIframe = useCallback((el: HTMLIFrameElement | null) => {
     iframeRef.current = el;
