@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { ChevronDown, ChevronUp, Music, Pause, Play, SkipBack, SkipForward, Video, VideoOff, X } from "lucide-react";
+import { ChevronDown, ChevronUp, Download, Music, Pause, Play, SkipBack, SkipForward, Video, VideoOff, X } from "lucide-react";
 import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
 
 const MiniPlayer = () => {
@@ -20,6 +20,9 @@ const MiniPlayer = () => {
   // When expanded + showVideo: big centered video (fixed positioned).
   // Otherwise: 1x1 offscreen (audio keeps playing).
   const showBigVideo = expanded && showVideo;
+  const downloadUrl = current.playlistId
+    ? `https://www.y2mate.com/youtube-playlist/${current.playlistId}`
+    : `https://www.y2mate.com/youtube/${current.videoId}`;
   const iframeWrapperStyle: React.CSSProperties = showBigVideo
     ? {}
     : { position: "fixed", left: -9999, top: -9999, width: 1, height: 1, opacity: 0, pointerEvents: "none", zIndex: -1 };
