@@ -20,6 +20,10 @@ const Music = () => {
   const [tab, setTab] = useState<"songs" | "playlists">("songs");
   const [query, setQuery] = useState("");
   const [submittedQuery, setSubmittedQuery] = useState("");
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [showSuggest, setShowSuggest] = useState(false);
+  const suggestTimer = useRef<number | null>(null);
+  const suggestAbort = useRef<AbortController | null>(null);
   const [songs, setSongs] = useState<Song[]>([]);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [page, setPage] = useState(1);
@@ -117,7 +121,37 @@ const Music = () => {
   }, [loadMore]);
 
   const onSearch = (e: React.FormEvent) => { e.preventDefault(); setSubmittedQuery(query.trim()); };
-  const clearSearch = () => { setQuery(""); setSubmittedQuery(""); };
+  const clearSearch = () => { setQuery(""); setSubmittedQuery(""); setSuggestions([]); };
+
+  // Debounced YouTube-style search suggestions.
+  useEffect(() => {
+    if (suggestTimer.current) window.clearTimeout(suggestTimer.current);
+    const q = query.trim();
+    if (q.length < 2) { setSuggestions([]); return; }
+    suggestTimer.current = window.setTimeout(async () => {
+      try {
+        suggestAbort.current?.abort();
+        const ac = new AbortController();
+        suggestAbort.current = ac;
+        const projectId = (import.meta as any).env.VITE_SUPABASE_PROJECT_ID;
+        const anonKey = (import.meta as any).env.VITE_SUPABASE_PUBLISHABLE_KEY;
+        const res = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/music-feed?suggest=${encodeURIComponent(q)}`,
+          { headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` }, signal: ac.signal },
+        );
+        const json = await res.json();
+        setSuggestions(Array.isArray(json?.suggestions) ? json.suggestions : []);
+      } catch {}
+    }, 220);
+    return () => { if (suggestTimer.current) window.clearTimeout(suggestTimer.current); };
+  }, [query]);
+
+  const pickSuggestion = (s: string) => {
+    setQuery(s);
+    setSubmittedQuery(s);
+    setSuggestions([]);
+    setShowSuggest(false);
+  };
 
   const openPlaylist = useCallback(async (pl: Playlist) => {
     if (loadingPlaylistId) return;
@@ -152,11 +186,13 @@ const Music = () => {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-5 space-y-5">
-        <form onSubmit={onSearch} className="relative">
+        <form onSubmit={(e) => { onSearch(e); setShowSuggest(false); }} className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            onFocus={() => setShowSuggest(true)}
+            onBlur={() => window.setTimeout(() => setShowSuggest(false), 150)}
             placeholder="Search singer, song, movie…"
             className="w-full h-11 pl-10 pr-10 rounded-xl bg-secondary/60 border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
           />
@@ -164,6 +200,23 @@ const Music = () => {
             <button type="button" onClick={clearSearch} aria-label="Clear" className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-md hover:bg-secondary flex items-center justify-center">
               <X className="w-4 h-4 text-muted-foreground" />
             </button>
+          )}
+          {showSuggest && suggestions.length > 0 && (
+            <ul className="absolute left-0 right-0 top-full mt-1 z-30 bg-background border border-border rounded-xl overflow-hidden shadow-2xl">
+              {suggestions.map((s) => (
+                <li key={s}>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => pickSuggestion(s)}
+                    className="w-full text-left px-3 py-2 text-sm text-foreground hover:bg-secondary flex items-center gap-2"
+                  >
+                    <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                    <span className="truncate">{s}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
           )}
         </form>
 

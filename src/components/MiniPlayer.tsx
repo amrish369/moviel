@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { ChevronDown, ChevronUp, Music, Pause, Play, SkipBack, SkipForward, Video, VideoOff, X } from "lucide-react";
+import { ChevronDown, ChevronUp, Download, Music, Pause, Play, SkipBack, SkipForward, Video, VideoOff, X } from "lucide-react";
 import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
 
 const MiniPlayer = () => {
@@ -20,6 +20,9 @@ const MiniPlayer = () => {
   // When expanded + showVideo: big centered video (fixed positioned).
   // Otherwise: 1x1 offscreen (audio keeps playing).
   const showBigVideo = expanded && showVideo;
+  const downloadUrl = current.playlistId
+    ? `https://www.y2mate.com/youtube-playlist/${current.playlistId}`
+    : `https://www.y2mate.com/youtube/${current.videoId}`;
   const iframeWrapperStyle: React.CSSProperties = showBigVideo
     ? {}
     : { position: "fixed", left: -9999, top: -9999, width: 1, height: 1, opacity: 0, pointerEvents: "none", zIndex: -1 };
@@ -91,6 +94,14 @@ const MiniPlayer = () => {
               {showVideo ? <VideoOff className="w-4 h-4" /> : <Video className="w-4 h-4" />}
               {showVideo ? "Audio only" : "Show video"}
             </button>
+            <a
+              href={downloadUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/15 border border-primary/40 hover:bg-primary/25 text-xs font-semibold text-primary"
+            >
+              <Download className="w-4 h-4" /> Download MP3
+            </a>
             <p className="text-[10px] text-muted-foreground text-center max-w-md">
               Audio background me chalta rahega jab tak app khula hai. Mobile screen-off par YouTube pause kar sakta hai.
             </p>
