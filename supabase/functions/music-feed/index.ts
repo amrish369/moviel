@@ -294,11 +294,56 @@ Deno.serve(async (req) => {
     const type = url.searchParams.get('type')?.trim().toLowerCase() || 'songs'; // songs | playlists
     const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10));
     const playlistId = url.searchParams.get('playlistId')?.trim();
+    const suggest = url.searchParams.get('suggest')?.trim();
+
+    // Autocomplete suggestions from YouTube's public suggestqueries endpoint.
+    if (suggest) {
+      try {
+        const r = await fetch(
+          `https://suggestqueries-clients6.youtube.com/complete/search?client=youtube&ds=yt&q=${encodeURIComponent(suggest)}&hl=en&gl=IN`,
+          { headers: { 'User-Agent': YT_UA, 'Accept-Language': 'en-IN,en;q=0.9' } },
+        );
+        const raw = await r.text();
+        // Response is JSONP-ish: window.google.ac.h([...])
+        const start = raw.indexOf('[');
+        const end = raw.lastIndexOf(']');
+        let items: string[] = [];
+        if (start !== -1 && end !== -1) {
+          try {
+            const arr = JSON.parse(raw.slice(start, end + 1));
+            const list = arr?.[1];
+            if (Array.isArray(list)) items = list.map((e: any) => (Array.isArray(e) ? e[0] : e)).filter((x) => typeof x === 'string');
+          } catch {}
+        }
+        return new Response(JSON.stringify({ suggestions: items.slice(0, 8) }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=600' },
+        });
+      } catch {
+        return new Response(JSON.stringify({ suggestions: [] }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+    }
 
     // Play whole playlist: return its video list.
     if (playlistId) {
       const songs = await scrapePlaylistVideos(playlistId);
-      return new Response(JSON.stringify({ playlistId, count: songs.length, songs }), {
+      // Fallback: if scraping fails, return a single synthetic entry that the
+      // player will treat as a playlist URL (iframe uses playlistId directly).
+      const payload = songs.length > 0
+        ? { playlistId, count: songs.length, songs }
+        : {
+            playlistId,
+            count: 1,
+            songs: [{
+              videoId: `pl_${playlistId}`,
+              playlistId,
+              title: 'YouTube Playlist',
+              channel: '',
+              thumbnail: `https://i.ytimg.com/vi/${playlistId}/hqdefault.jpg`,
+              duration: '',
+              views: '',
+            }],
+          };
+      return new Response(JSON.stringify(payload), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=3600' },
       });
     }
