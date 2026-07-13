@@ -1,13 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Loader2, Music as MusicIcon, Play, User } from "lucide-react";
+import { ArrowLeft, ListMusic, Loader2, Music as MusicIcon, Play, User } from "lucide-react";
 import { Song, useMusicPlayer } from "@/contexts/MusicPlayerContext";
+
+interface Playlist { playlistId: string; title: string; channel: string; thumbnail: string; videoCount: string; }
+interface Bio { photo?: string; extract?: string; url?: string; }
 
 const ArtistDetail = () => {
   const [params] = useSearchParams();
   const name = (params.get("name") || "").trim();
   const { play, current } = useMusicPlayer();
   const [songs, setSongs] = useState<Song[]>([]);
+  const [playlists, setPlaylists] = useState<Playlist[]>([]);
+  const [loadingPlaylistId, setLoadingPlaylistId] = useState<string | null>(null);
+  const [bio, setBio] = useState<Bio | null>(null);
+  const [bioExpanded, setBioExpanded] = useState(false);
+  const [tab, setTab] = useState<"songs" | "playlists">("songs");
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -25,11 +33,76 @@ const ArtistDetail = () => {
 
   useEffect(() => {
     seenRef.current = new Set();
-    setSongs([]); setPage(1); setHasMore(true); setError(null);
+    setSongs([]); setPlaylists([]); setPage(1); setHasMore(true); setError(null); setBio(null); setBioExpanded(false);
   }, [name]);
 
+  // Fetch artist bio + photo from Wikipedia REST (CORS-enabled, no key needed).
+  useEffect(() => {
+    if (!name) return;
+    let aborted = false;
+    const tryFetch = async (title: string): Promise<Bio | null> => {
+      try {
+        const r = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}?redirect=true`);
+        if (!r.ok) return null;
+        const j = await r.json();
+        if (j?.type === "disambiguation") return null;
+        return {
+          photo: j?.thumbnail?.source || j?.originalimage?.source,
+          extract: j?.extract,
+          url: j?.content_urls?.desktop?.page,
+        };
+      } catch { return null; }
+    };
+    (async () => {
+      // Try "<name> (singer)" first for better disambiguation, fall back to plain name.
+      const cleaned = name.replace(/\s*[-–]\s*topic\s*$/i, "").trim();
+      const b = (await tryFetch(`${cleaned} (singer)`)) || (await tryFetch(cleaned));
+      if (!aborted && b?.extract) setBio(b);
+    })();
+    return () => { aborted = true; };
+  }, [name]);
+
+  // Load a small batch of playlists for this artist (lazy — first time user opens the tab).
+  const loadPlaylists = useCallback(async () => {
+    if (!name || playlists.length > 0) return;
+    try {
+      const projectId = (import.meta as any).env.VITE_SUPABASE_PROJECT_ID;
+      const anonKey = (import.meta as any).env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const found: Playlist[] = [];
+      const seen = new Set<string>();
+      for (let p = 1; p <= 3 && found.length < 20; p++) {
+        const url = `https://${projectId}.supabase.co/functions/v1/music-feed?q=${encodeURIComponent(name)}&type=playlists&page=${p}`;
+        const res = await fetch(url, { headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` } });
+        const json = await res.json();
+        const raw: Playlist[] = Array.isArray(json?.playlists) ? json.playlists : [];
+        for (const pl of raw) {
+          if (!pl?.playlistId || seen.has(pl.playlistId)) continue;
+          seen.add(pl.playlistId);
+          found.push(pl);
+        }
+      }
+      setPlaylists(found);
+    } catch {}
+  }, [name, playlists.length]);
+
+  useEffect(() => { if (tab === "playlists") loadPlaylists(); }, [tab, loadPlaylists]);
+
+  const openPlaylist = useCallback(async (pl: Playlist) => {
+    if (loadingPlaylistId) return;
+    setLoadingPlaylistId(pl.playlistId);
+    try {
+      const projectId = (import.meta as any).env.VITE_SUPABASE_PROJECT_ID;
+      const anonKey = (import.meta as any).env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const url = `https://${projectId}.supabase.co/functions/v1/music-feed?playlistId=${encodeURIComponent(pl.playlistId)}`;
+      const res = await fetch(url, { headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` } });
+      const json = await res.json();
+      const items: Song[] = Array.isArray(json?.songs) ? json.songs : [];
+      if (items.length) play(items[0], items);
+    } catch {} finally { setLoadingPlaylistId(null); }
+  }, [loadingPlaylistId, play]);
+
   const loadMore = useCallback(async () => {
-    if (!name || loading || !hasMore) return;
+    if (!name || loading || !hasMore || tab !== "songs") return;
     setLoading(true); setError(null);
     const myId = ++reqId.current;
     try {
@@ -61,12 +134,12 @@ const ArtistDetail = () => {
     } finally {
       if (myId === reqId.current) setLoading(false);
     }
-  }, [name, page, loading, hasMore]);
+  }, [name, page, loading, hasMore, tab]);
 
   useEffect(() => {
-    if (songs.length === 0 && hasMore && !loading && name) loadMore();
+    if (tab === "songs" && songs.length === 0 && hasMore && !loading && name) loadMore();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [name, songs.length]);
+  }, [name, songs.length, tab]);
 
   useEffect(() => {
     const el = sentinelRef.current;
