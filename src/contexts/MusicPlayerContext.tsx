@@ -41,6 +41,8 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
   const [showVideo, setShowVideo] = useState(true);
   const [expanded, setExpanded] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const silentAudioRef = useRef<HTMLAudioElement | null>(null);
+  const wakeLockRef = useRef<any>(null);
 
   const current = queue[index] || null;
 
@@ -57,6 +59,28 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
     setIndex(idx);
     setIsPlaying(true);
     setExpanded(true);
+    // Kick off the silent keep-alive audio on this user gesture so the OS
+    // grants the tab audio focus — this keeps the YouTube iframe from being
+    // suspended when the screen locks or the tab is backgrounded.
+    try {
+      if (!silentAudioRef.current) {
+        // 1s of silent MP3 (base64), looped.
+        const a = new Audio(
+          "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQxAADB8AhSmxhIIEVCSiJrDCQBTcu3UrAIwUdkRgQbFAZC1CQEwTJ9mjRvBA4UOLD8nKVOWfh+UlK3z/177OXrfOdKl7097t597uikn9tGl6JAM1qWFTUpUiUsSyilJKgAAAAA//sQxAoDwAAB/gAAACAAADSAAAAETEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV",
+        );
+        a.loop = true;
+        a.volume = 0.001;
+        (a as any).playsInline = true;
+        silentAudioRef.current = a;
+      }
+      silentAudioRef.current.play().catch(() => {});
+    } catch {}
+    // Screen Wake Lock — keeps screen from sleeping while listening actively.
+    // (Doesn't fire while screen already off, but re-acquired on visibility.)
+    if ("wakeLock" in navigator) {
+      // @ts-ignore
+      navigator.wakeLock.request("screen").then((wl: any) => { wakeLockRef.current = wl; }).catch(() => {});
+    }
   }, []);
 
   const toggle = useCallback(() => {
@@ -82,6 +106,8 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
     setIndex(0);
     setIsPlaying(false);
     setExpanded(false);
+    try { silentAudioRef.current?.pause(); } catch {}
+    try { wakeLockRef.current?.release?.(); wakeLockRef.current = null; } catch {}
   }, []);
 
   // Listen for YT iframe end-of-video events -> auto next
@@ -142,6 +168,13 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
     const onVis = () => {
       if (document.visibilityState === "visible" && isPlaying) {
         post("playVideo");
+        // Re-acquire wake lock, which is released when tab hides.
+        if ("wakeLock" in navigator) {
+          // @ts-ignore
+          navigator.wakeLock.request("screen").then((wl: any) => { wakeLockRef.current = wl; }).catch(() => {});
+        }
+        // Ensure silent keep-alive is running.
+        silentAudioRef.current?.play().catch(() => {});
       }
     };
     document.addEventListener("visibilitychange", onVis);
