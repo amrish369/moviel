@@ -15,7 +15,8 @@ const MiniPlayer = () => {
   const currentIndex = queue.findIndex((s) => s.videoId === current.videoId);
   const upNext = queue.slice(currentIndex + 1).concat(queue.slice(0, Math.max(0, currentIndex)));
 
-  const src = current.playlistId
+  const isPlaylistOnly = Boolean(current.playlistId && current.videoId.startsWith("pl_"));
+  const src = isPlaylistOnly
     ? `https://www.youtube.com/embed/videoseries?list=${current.playlistId}&autoplay=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1&iv_load_policy=3`
     : `https://www.youtube.com/embed/${current.videoId}?autoplay=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1&iv_load_policy=3`;
 
@@ -23,7 +24,7 @@ const MiniPlayer = () => {
   // When expanded + showVideo: big centered video (fixed positioned).
   // Otherwise: 1x1 offscreen (audio keeps playing).
   const showBigVideo = expanded && showVideo;
-  const downloadUrl = current.playlistId
+  const downloadUrl = isPlaylistOnly
     ? `https://www.y2mate.com/youtube-playlist/${current.playlistId}`
     : `https://www.y2mate.com/youtube/${current.videoId}`;
   const iframeWrapperStyle: React.CSSProperties = showBigVideo
@@ -40,6 +41,7 @@ const MiniPlayer = () => {
       >
         <div className={showBigVideo ? "aspect-video rounded-2xl overflow-hidden bg-black shadow-2xl" : ""}>
           <iframe
+            key={`${current.videoId}-${current.playlistId || "video"}`}
             ref={iframeRef}
             src={src}
             title={current.title}
