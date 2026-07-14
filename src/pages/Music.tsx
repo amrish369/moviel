@@ -159,8 +159,8 @@ const Music = () => {
     try {
       const projectId = (import.meta as any).env.VITE_SUPABASE_PROJECT_ID;
       const anonKey = (import.meta as any).env.VITE_SUPABASE_PUBLISHABLE_KEY;
-      const url = `https://${projectId}.supabase.co/functions/v1/music-feed?playlistId=${encodeURIComponent(pl.playlistId)}`;
-      const res = await fetch(url, { headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` } });
+      const url = `https://${projectId}.supabase.co/functions/v1/music-feed?playlistId=${encodeURIComponent(pl.playlistId)}&fresh=${Date.now()}`;
+      const res = await fetch(url, { cache: "no-store", headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` } });
       const json = await res.json();
       const items: Song[] = Array.isArray(json?.songs) ? json.songs : [];
       if (items.length) play(items[0], items);
