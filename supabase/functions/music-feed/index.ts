@@ -206,7 +206,7 @@ async function scrapePlaylistVideos(playlistId: string): Promise<Song[]> {
       'Cookie': 'CONSENT=YES+cb.20210328-17-p0.en+FX+000; SOCS=CAI',
     },
   });
-  if (!res.ok) return [];
+  if (!res.ok) return await innertubePlaylistVideos(playlistId);
   const html = await res.text();
   const markers = ['var ytInitialData = ', 'ytInitialData = '];
   let jsonStart = -1;
@@ -241,7 +241,60 @@ async function scrapePlaylistVideos(playlistId: string): Promise<Song[]> {
     for (const k of Object.keys(node)) walk(node[k]);
   };
   walk(data);
-  return out;
+  if (out.length > 0) return out;
+  return await innertubePlaylistVideos(playlistId);
+}
+
+// Innertube (v1) fallback — POST to browse with playlist browseId "VL<playlistId>".
+// Much more reliable than HTML scraping when YT ships new markup.
+async function innertubePlaylistVideos(playlistId: string): Promise<Song[]> {
+  try {
+    const body = {
+      context: {
+        client: {
+          clientName: 'WEB',
+          clientVersion: '2.20240726.00.00',
+          hl: 'en', gl: 'IN',
+        },
+      },
+      browseId: `VL${playlistId}`,
+    };
+    const r = await fetch(
+      'https://www.youtube.com/youtubei/v1/browse?prettyPrint=false',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': YT_UA,
+          'Accept-Language': 'en-IN,en;q=0.9',
+          'X-YouTube-Client-Name': '1',
+          'X-YouTube-Client-Version': '2.20240726.00.00',
+        },
+        body: JSON.stringify(body),
+      },
+    );
+    if (!r.ok) return [];
+    const data = await r.json();
+    const out: Song[] = [];
+    const seen = new Set<string>();
+    const walk = (node: any) => {
+      if (!node || typeof node !== 'object' || out.length >= 200) return;
+      if (Array.isArray(node)) { for (const c of node) walk(c); return; }
+      const pv = node.playlistVideoRenderer;
+      if (pv?.videoId && !seen.has(pv.videoId)) {
+        seen.add(pv.videoId);
+        const title = pv.title?.runs?.map((r: any) => r.text).join('') || pv.title?.simpleText || '';
+        const channel = pv.shortBylineText?.runs?.[0]?.text || '';
+        const thumbs = pv.thumbnail?.thumbnails || [];
+        const thumbnail = thumbs[thumbs.length - 1]?.url || `https://i.ytimg.com/vi/${pv.videoId}/hqdefault.jpg`;
+        const duration = pv.lengthText?.simpleText || '';
+        out.push({ videoId: pv.videoId, title, channel, thumbnail, duration, views: '' });
+      }
+      for (const k of Object.keys(node)) walk(node[k]);
+    };
+    walk(data);
+    return out;
+  } catch { return []; }
 }
 
 function parseDur(t: string): number | null {

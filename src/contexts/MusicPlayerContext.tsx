@@ -20,6 +20,7 @@ interface Ctx {
   toggle: () => void;
   next: () => void;
   prev: () => void;
+  jumpTo: (index: number) => void;
   close: () => void;
   setShowVideo: (v: boolean) => void;
   setExpanded: (v: boolean) => void;
@@ -98,6 +99,12 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
 
   const prev = useCallback(() => {
     setIndex((i) => (queue.length ? (i - 1 + queue.length) % queue.length : 0));
+    setIsPlaying(true);
+  }, [queue.length]);
+
+  const jumpTo = useCallback((i: number) => {
+    if (i < 0 || i >= queue.length) return;
+    setIndex(i);
     setIsPlaying(true);
   }, [queue.length]);
 
@@ -187,8 +194,8 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
 
   const value = useMemo<Ctx>(() => ({
     current, queue, isPlaying, showVideo, expanded,
-    play, toggle, next, prev, close, setShowVideo, setExpanded, registerIframe,
-  }), [current, queue, isPlaying, showVideo, expanded, play, toggle, next, prev, close, registerIframe]);
+    play, toggle, next, prev, jumpTo, close, setShowVideo, setExpanded, registerIframe,
+  }), [current, queue, isPlaying, showVideo, expanded, play, toggle, next, prev, jumpTo, close, registerIframe]);
 
   return <MusicCtx.Provider value={value}>{children}</MusicCtx.Provider>;
 };

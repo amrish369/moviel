@@ -1,16 +1,19 @@
-import { useEffect, useRef } from "react";
-import { ChevronDown, ChevronUp, Download, Music, Pause, Play, SkipBack, SkipForward, Video, VideoOff, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ChevronDown, ChevronUp, Download, ListMusic, Music, Pause, Play, SkipBack, SkipForward, Video, VideoOff, X } from "lucide-react";
 import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
 
 const MiniPlayer = () => {
-  const { current, isPlaying, showVideo, expanded, toggle, next, prev, close, setShowVideo, setExpanded, registerIframe } = useMusicPlayer();
+  const { current, queue, isPlaying, showVideo, expanded, toggle, next, prev, jumpTo, close, setShowVideo, setExpanded, registerIframe } = useMusicPlayer();
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const [showQueue, setShowQueue] = useState(false);
 
   useEffect(() => {
     registerIframe(iframeRef.current);
   }, [registerIframe, current?.videoId]);
 
   if (!current) return null;
+  const currentIndex = queue.findIndex((s) => s.videoId === current.videoId);
+  const upNext = queue.slice(currentIndex + 1).concat(queue.slice(0, Math.max(0, currentIndex)));
 
   const src = current.playlistId
     ? `https://www.youtube.com/embed/videoseries?list=${current.playlistId}&autoplay=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1&iv_load_policy=3`
@@ -105,6 +108,40 @@ const MiniPlayer = () => {
             <p className="text-[10px] text-muted-foreground text-center max-w-md">
               Audio background me chalta rahega jab tak app khula hai. Mobile screen-off par YouTube pause kar sakta hai.
             </p>
+
+            {queue.length > 1 && (
+              <div className="w-full max-w-xl mt-2">
+                <div className="flex items-center gap-2 mb-2 px-1">
+                  <ListMusic className="w-4 h-4 text-primary" />
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-foreground">Up Next</h3>
+                  <span className="text-[10px] text-muted-foreground">{queue.length} songs</span>
+                </div>
+                <ul className="divide-y divide-border rounded-xl overflow-hidden border border-border bg-background/50">
+                  {queue.map((s, i) => {
+                    const active = i === currentIndex;
+                    return (
+                      <li key={`${s.videoId}-${i}`}>
+                        <button
+                          onClick={() => jumpTo(i)}
+                          className={`w-full flex items-center gap-3 p-2.5 text-left hover:bg-secondary/60 transition ${active ? "bg-secondary/70" : ""}`}
+                        >
+                          <span className="w-6 text-xs font-mono text-muted-foreground shrink-0 text-center">
+                            {active ? <Play className="w-3 h-3 text-primary fill-primary inline" /> : i + 1}
+                          </span>
+                          <div className="relative w-14 h-9 rounded overflow-hidden shrink-0 bg-secondary">
+                            <img src={s.thumbnail} alt="" loading="lazy" className="w-full h-full object-cover" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className={`text-xs font-semibold line-clamp-1 ${active ? "text-primary" : "text-foreground"}`}>{s.title}</p>
+                            <p className="text-[10px] text-muted-foreground truncate">{s.channel}{s.duration ? ` • ${s.duration}` : ""}</p>
+                          </div>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -112,6 +149,35 @@ const MiniPlayer = () => {
       {/* Mini bar */}
       {!expanded && (
         <div className="fixed bottom-0 left-0 right-0 z-[80] bg-background/95 backdrop-blur-xl border-t border-border">
+          {showQueue && queue.length > 1 && (
+            <div className="max-w-4xl mx-auto px-3 pt-2 pb-1 max-h-64 overflow-y-auto border-b border-border">
+              <div className="flex items-center justify-between mb-1 px-1">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Up Next • {queue.length}</span>
+                <button onClick={() => setShowQueue(false)} className="text-[10px] text-primary font-semibold">Hide</button>
+              </div>
+              <ul className="divide-y divide-border/60">
+                {queue.map((s, i) => {
+                  const active = i === currentIndex;
+                  return (
+                    <li key={`${s.videoId}-${i}`}>
+                      <button
+                        onClick={() => jumpTo(i)}
+                        className={`w-full flex items-center gap-2 py-1.5 text-left ${active ? "opacity-100" : "opacity-90 hover:opacity-100"}`}
+                      >
+                        <span className="w-5 text-[10px] font-mono text-muted-foreground shrink-0 text-center">
+                          {active ? <Play className="w-2.5 h-2.5 text-primary fill-primary inline" /> : i + 1}
+                        </span>
+                        <img src={s.thumbnail} alt="" loading="lazy" className="w-10 h-6 rounded object-cover shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <p className={`text-[11px] font-semibold line-clamp-1 ${active ? "text-primary" : "text-foreground"}`}>{s.title}</p>
+                        </div>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
           <div className="max-w-4xl mx-auto px-3 py-2 flex items-center gap-3">
             <button onClick={() => setExpanded(true)} className="flex items-center gap-3 flex-1 min-w-0 text-left">
               <div className="relative w-11 h-11 rounded-lg overflow-hidden shrink-0 bg-secondary">
@@ -125,6 +191,11 @@ const MiniPlayer = () => {
                 <p className="text-[10px] text-muted-foreground truncate">{current.channel}</p>
               </div>
             </button>
+            {queue.length > 1 && (
+              <button onClick={() => setShowQueue((v) => !v)} aria-label="Queue" className={`w-8 h-8 rounded-full flex items-center justify-center ${showQueue ? "bg-primary/20 text-primary" : "hover:bg-secondary text-foreground"}`}>
+                <ListMusic className="w-4 h-4" />
+              </button>
+            )}
             <button onClick={prev} aria-label="Previous" className="w-8 h-8 rounded-full hover:bg-secondary flex items-center justify-center">
               <SkipBack className="w-4 h-4 text-foreground" />
             </button>
