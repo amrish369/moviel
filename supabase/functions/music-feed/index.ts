@@ -197,6 +197,49 @@ function scrapePlaylists(html: string): Playlist[] {
   return out;
 }
 
+function textValue(node: any): string {
+  if (!node) return '';
+  if (typeof node === 'string') return node;
+  if (typeof node.content === 'string') return node.content;
+  if (typeof node.simpleText === 'string') return node.simpleText;
+  if (Array.isArray(node.runs)) return node.runs.map((r: any) => r?.text || '').join('');
+  return '';
+}
+
+function firstTextByKey(node: any, key: string): string {
+  if (!node || typeof node !== 'object') return '';
+  if (typeof node[key] === 'string') return node[key];
+  if (node[key]?.content) return String(node[key].content);
+  if (Array.isArray(node)) {
+    for (const child of node) {
+      const found = firstTextByKey(child, key);
+      if (found) return found;
+    }
+    return '';
+  }
+  for (const child of Object.values(node)) {
+    const found = firstTextByKey(child, key);
+    if (found) return found;
+  }
+  return '';
+}
+
+function extractLockupVideo(lv: any, playlistId?: string): Song | null {
+  if (!lv || lv.contentType !== 'LOCKUP_CONTENT_TYPE_VIDEO' || !lv.contentId) return null;
+  const videoId = String(lv.contentId);
+  const title = textValue(lv.metadata?.lockupMetadataViewModel?.title) || firstTextByKey(lv.metadata, 'accessibilityText');
+  const rows = lv.metadata?.lockupMetadataViewModel?.metadata?.contentMetadataViewModel?.metadataRows || [];
+  const rowParts = Array.isArray(rows) ? rows.flatMap((r: any) => r?.metadataParts || []) : [];
+  const channel = textValue(rowParts[0]?.text);
+  const views = textValue(rowParts[1]?.text) || textValue(rowParts[2]?.text) || '';
+  const sources = lv.contentImage?.thumbnailViewModel?.image?.sources || [];
+  const thumbnail = sources[sources.length - 1]?.url || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+  const badges = lv.contentImage?.thumbnailViewModel?.overlays?.[0]?.thumbnailBottomOverlayViewModel?.badges || [];
+  const duration = badges.map((b: any) => b?.thumbnailBadgeViewModel?.text).find(Boolean) || '';
+  if (!title) return null;
+  return { videoId, title, channel, thumbnail, duration, views, ...(playlistId ? { playlistId } : {}) };
+}
+
 async function scrapePlaylistVideos(playlistId: string): Promise<Song[]> {
   const url = `https://www.youtube.com/playlist?list=${encodeURIComponent(playlistId)}&hl=en&gl=IN`;
   const res = await fetch(url, {
@@ -237,6 +280,11 @@ async function scrapePlaylistVideos(playlistId: string): Promise<Song[]> {
       const thumbnail = thumbs[thumbs.length - 1]?.url || `https://i.ytimg.com/vi/${pv.videoId}/hqdefault.jpg`;
       const duration = pv.lengthText?.simpleText || '';
       out.push({ videoId: pv.videoId, title, channel, thumbnail, duration, views: '' });
+    }
+    const lockupSong = extractLockupVideo(node.lockupViewModel);
+    if (lockupSong && !seen.has(lockupSong.videoId)) {
+      seen.add(lockupSong.videoId);
+      out.push(lockupSong);
     }
     for (const k of Object.keys(node)) walk(node[k]);
   };
@@ -289,6 +337,11 @@ async function innertubePlaylistVideos(playlistId: string): Promise<Song[]> {
         const thumbnail = thumbs[thumbs.length - 1]?.url || `https://i.ytimg.com/vi/${pv.videoId}/hqdefault.jpg`;
         const duration = pv.lengthText?.simpleText || '';
         out.push({ videoId: pv.videoId, title, channel, thumbnail, duration, views: '' });
+      }
+      const lockupSong = extractLockupVideo(node.lockupViewModel);
+      if (lockupSong && !seen.has(lockupSong.videoId)) {
+        seen.add(lockupSong.videoId);
+        out.push(lockupSong);
       }
       for (const k of Object.keys(node)) walk(node[k]);
     };
