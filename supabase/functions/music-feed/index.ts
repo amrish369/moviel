@@ -7,6 +7,7 @@ interface Song {
   thumbnail: string;
   duration: string;
   views: string;
+  playlistId?: string;
 }
 
 interface Playlist {
