@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronUp, Download, ListMusic, Music, Pause, Play, SkipBack, SkipForward, Video, VideoOff, X } from "lucide-react";
+import { ChevronDown, ChevronUp, Download, ListMusic, Music, Pause, Play, Rewind, FastForward, SkipBack, SkipForward, Video, VideoOff, X } from "lucide-react";
 import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
 
 const MiniPlayer = () => {
-  const { current, queue, isPlaying, showVideo, expanded, toggle, next, prev, jumpTo, close, setShowVideo, setExpanded, registerIframe } = useMusicPlayer();
+  const { current, queue, isPlaying, showVideo, expanded, currentTime, duration, toggle, next, prev, jumpTo, close, seekTo, seekBy, setShowVideo, setExpanded, registerIframe } = useMusicPlayer();
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const [showQueue, setShowQueue] = useState(false);
 
@@ -16,6 +16,13 @@ const MiniPlayer = () => {
   const upNext = queue.slice(currentIndex + 1).concat(queue.slice(0, Math.max(0, currentIndex)));
 
   const isPlaylistOnly = Boolean(current.playlistId && current.videoId.startsWith("pl_"));
+  const fmt = (s: number) => {
+    if (!isFinite(s) || s < 0) s = 0;
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec.toString().padStart(2, "0")}`;
+  };
+  const pct = duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0;
   const src = isPlaylistOnly
     ? `https://www.youtube.com/embed/videoseries?list=${current.playlistId}&autoplay=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1&iv_load_policy=3`
     : `https://www.youtube.com/embed/${current.videoId}?autoplay=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1&iv_load_policy=3`;
@@ -85,13 +92,36 @@ const MiniPlayer = () => {
               <button onClick={prev} aria-label="Previous" className="w-12 h-12 rounded-full bg-secondary/60 hover:bg-secondary flex items-center justify-center">
                 <SkipBack className="w-5 h-5 text-foreground" />
               </button>
+              <button onClick={() => seekBy(-10)} aria-label="Rewind 10 seconds" className="w-11 h-11 rounded-full bg-secondary/60 hover:bg-secondary flex items-center justify-center">
+                <Rewind className="w-5 h-5 text-foreground" />
+              </button>
               <button onClick={toggle} aria-label={isPlaying ? "Pause" : "Play"} className="w-16 h-16 rounded-full bg-primary hover:bg-primary/90 glow-gold flex items-center justify-center">
                 {isPlaying ? <Pause className="w-7 h-7 text-primary-foreground fill-primary-foreground" /> : <Play className="w-7 h-7 text-primary-foreground fill-primary-foreground ml-1" />}
+              </button>
+              <button onClick={() => seekBy(10)} aria-label="Forward 10 seconds" className="w-11 h-11 rounded-full bg-secondary/60 hover:bg-secondary flex items-center justify-center">
+                <FastForward className="w-5 h-5 text-foreground" />
               </button>
               <button onClick={next} aria-label="Next" className="w-12 h-12 rounded-full bg-secondary/60 hover:bg-secondary flex items-center justify-center">
                 <SkipForward className="w-5 h-5 text-foreground" />
               </button>
             </div>
+            {!isPlaylistOnly && (
+              <div className="w-full max-w-xl px-2">
+                <input
+                  type="range"
+                  min={0}
+                  max={Math.max(1, Math.floor(duration))}
+                  value={Math.floor(currentTime)}
+                  onChange={(e) => seekTo(Number(e.target.value))}
+                  aria-label="Seek"
+                  className="w-full accent-primary cursor-pointer"
+                />
+                <div className="flex justify-between text-[10px] font-mono text-muted-foreground mt-1">
+                  <span>{fmt(currentTime)}</span>
+                  <span>{duration > 0 ? fmt(duration) : "--:--"}</span>
+                </div>
+              </div>
+            )}
             <button
               onClick={() => setShowVideo(!showVideo)}
               className="flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/60 hover:bg-secondary text-xs font-semibold text-foreground"
@@ -151,6 +181,11 @@ const MiniPlayer = () => {
       {/* Mini bar */}
       {!expanded && (
         <div className="fixed bottom-0 left-0 right-0 z-[80] bg-background/95 backdrop-blur-xl border-t border-border">
+          {!isPlaylistOnly && duration > 0 && (
+            <div className="h-0.5 w-full bg-secondary/60">
+              <div className="h-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+            </div>
+          )}
           {showQueue && queue.length > 1 && (
             <div className="max-w-4xl mx-auto px-3 pt-2 pb-1 max-h-64 overflow-y-auto border-b border-border">
               <div className="flex items-center justify-between mb-1 px-1">

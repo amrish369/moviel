@@ -16,12 +16,16 @@ interface Ctx {
   isPlaying: boolean;
   showVideo: boolean;
   expanded: boolean;
+  currentTime: number;
+  duration: number;
   play: (song: Song, queue?: Song[]) => void;
   toggle: () => void;
   next: () => void;
   prev: () => void;
   jumpTo: (index: number) => void;
   close: () => void;
+  seekTo: (seconds: number) => void;
+  seekBy: (delta: number) => void;
   setShowVideo: (v: boolean) => void;
   setExpanded: (v: boolean) => void;
   registerIframe: (el: HTMLIFrameElement | null) => void;
@@ -44,6 +48,8 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const silentAudioRef = useRef<HTMLAudioElement | null>(null);
   const wakeLockRef = useRef<any>(null);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
 
   const current = queue[index] || null;
 
@@ -52,6 +58,20 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
     if (!win) return;
     win.postMessage(JSON.stringify({ event: "command", func, args }), "*");
   }, []);
+
+  const seekTo = useCallback((seconds: number) => {
+    const s = Math.max(0, seconds);
+    post("seekTo", [s, true]);
+    setCurrentTime(s);
+  }, [post]);
+
+  const seekBy = useCallback((delta: number) => {
+    setCurrentTime((t) => {
+      const nx = Math.max(0, Math.min((duration || Number.MAX_SAFE_INTEGER), t + delta));
+      post("seekTo", [nx, true]);
+      return nx;
+    });
+  }, [post, duration]);
 
   const play = useCallback((song: Song, list?: Song[]) => {
     const q = list && list.length ? list : [song];
@@ -113,6 +133,8 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
     setIndex(0);
     setIsPlaying(false);
     setExpanded(false);
+    setCurrentTime(0);
+    setDuration(0);
     try { silentAudioRef.current?.pause(); } catch {}
     try { wakeLockRef.current?.release?.(); wakeLockRef.current = null; } catch {}
   }, []);
@@ -133,12 +155,41 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
           } else if (data.info === 2) {
             setIsPlaying(false);
           }
+        } else if (data.event === "infoDelivery" && data.info) {
+          if (typeof data.info.currentTime === "number") setCurrentTime(data.info.currentTime);
+          if (typeof data.info.duration === "number" && data.info.duration > 0) setDuration(data.info.duration);
         }
       } catch {}
     };
     window.addEventListener("message", onMsg);
     return () => window.removeEventListener("message", onMsg);
   }, [queue.length, next]);
+
+  // Handshake: tell iframe we want state + info updates, then poll time.
+  useEffect(() => {
+    if (!current) return;
+    const iframe = iframeRef.current;
+    const win = iframe?.contentWindow;
+    if (!win) return;
+    let cancelled = false;
+    const handshake = () => {
+      try {
+        win.postMessage(JSON.stringify({ event: "listening", id: current.videoId }), "*");
+        win.postMessage(JSON.stringify({ event: "command", func: "addEventListener", args: ["onStateChange"] }), "*");
+      } catch {}
+    };
+    // Do handshake a few times as iframe may not be ready immediately.
+    const t1 = setTimeout(handshake, 300);
+    const t2 = setTimeout(handshake, 1200);
+    setCurrentTime(0);
+    setDuration(0);
+    const poll = setInterval(() => {
+      if (cancelled) return;
+      post("getCurrentTime");
+      post("getDuration");
+    }, 750);
+    return () => { cancelled = true; clearTimeout(t1); clearTimeout(t2); clearInterval(poll); };
+  }, [current?.videoId, current?.playlistId, post]);
 
   // MediaSession API — lock-screen controls + hints to OS to keep audio alive
   // when screen turns off (works on Android Chrome when the tab has audio focus).
@@ -165,8 +216,13 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
       navigator.mediaSession.setActionHandler("pause", () => { post("pauseVideo"); setIsPlaying(false); });
       navigator.mediaSession.setActionHandler("nexttrack", () => next());
       navigator.mediaSession.setActionHandler("previoustrack", () => prev());
+      try {
+        navigator.mediaSession.setActionHandler("seekbackward", (d: any) => seekBy(-(d?.seekOffset || 10)));
+        navigator.mediaSession.setActionHandler("seekforward", (d: any) => seekBy(d?.seekOffset || 10));
+        navigator.mediaSession.setActionHandler("seekto", (d: any) => { if (typeof d?.seekTime === "number") seekTo(d.seekTime); });
+      } catch {}
     } catch {}
-  }, [current, isPlaying, post, next, prev]);
+  }, [current, isPlaying, post, next, prev, seekBy, seekTo]);
 
   // Keep audio playing when the tab goes background / screen locks.
   // Some Android Chrome versions pause a hidden iframe. Re-issue playVideo
@@ -193,9 +249,9 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
   }, []);
 
   const value = useMemo<Ctx>(() => ({
-    current, queue, isPlaying, showVideo, expanded,
-    play, toggle, next, prev, jumpTo, close, setShowVideo, setExpanded, registerIframe,
-  }), [current, queue, isPlaying, showVideo, expanded, play, toggle, next, prev, jumpTo, close, registerIframe]);
+    current, queue, isPlaying, showVideo, expanded, currentTime, duration,
+    play, toggle, next, prev, jumpTo, close, seekTo, seekBy, setShowVideo, setExpanded, registerIframe,
+  }), [current, queue, isPlaying, showVideo, expanded, currentTime, duration, play, toggle, next, prev, jumpTo, close, seekTo, seekBy, registerIframe]);
 
   return <MusicCtx.Provider value={value}>{children}</MusicCtx.Provider>;
 };
