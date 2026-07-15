@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronUp, Download, ListMusic, Music, Pause, Play, SkipBack, SkipForward, Video, VideoOff, X } from "lucide-react";
+import { ChevronDown, ChevronUp, Download, ListMusic, Music, Pause, Play, Rewind, FastForward, SkipBack, SkipForward, Video, VideoOff, X } from "lucide-react";
 import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
 
 const MiniPlayer = () => {
-  const { current, queue, isPlaying, showVideo, expanded, toggle, next, prev, jumpTo, close, setShowVideo, setExpanded, registerIframe } = useMusicPlayer();
+  const { current, queue, isPlaying, showVideo, expanded, currentTime, duration, toggle, next, prev, jumpTo, close, seekTo, seekBy, setShowVideo, setExpanded, registerIframe } = useMusicPlayer();
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const [showQueue, setShowQueue] = useState(false);
 
@@ -16,6 +16,13 @@ const MiniPlayer = () => {
   const upNext = queue.slice(currentIndex + 1).concat(queue.slice(0, Math.max(0, currentIndex)));
 
   const isPlaylistOnly = Boolean(current.playlistId && current.videoId.startsWith("pl_"));
+  const fmt = (s: number) => {
+    if (!isFinite(s) || s < 0) s = 0;
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec.toString().padStart(2, "0")}`;
+  };
+  const pct = duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0;
   const src = isPlaylistOnly
     ? `https://www.youtube.com/embed/videoseries?list=${current.playlistId}&autoplay=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1&iv_load_policy=3`
     : `https://www.youtube.com/embed/${current.videoId}?autoplay=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1&iv_load_policy=3`;
