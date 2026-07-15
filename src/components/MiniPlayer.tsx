@@ -181,6 +181,11 @@ const MiniPlayer = () => {
       {/* Mini bar */}
       {!expanded && (
         <div className="fixed bottom-0 left-0 right-0 z-[80] bg-background/95 backdrop-blur-xl border-t border-border">
+          {!isPlaylistOnly && duration > 0 && (
+            <div className="h-0.5 w-full bg-secondary/60">
+              <div className="h-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+            </div>
+          )}
           {showQueue && queue.length > 1 && (
             <div className="max-w-4xl mx-auto px-3 pt-2 pb-1 max-h-64 overflow-y-auto border-b border-border">
               <div className="flex items-center justify-between mb-1 px-1">
