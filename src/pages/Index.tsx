@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Clapperboard, Wifi, WifiOff, Loader2, Search, Star, X, Menu, Sparkles, Tv, CalendarDays, History, Rocket, CalendarRange, Users, MessageSquare, TrendingUp, Globe2, Gem, Infinity as InfinityIcon, Bookmark, LogIn, User as UserIcon, Play, MonitorPlay, Music as MusicIcon } from "lucide-react";
+import { Clapperboard, Wifi, WifiOff, Loader2, Search, Star, X, Menu, Sparkles, Tv, CalendarDays, History, Rocket, CalendarRange, Users, MessageSquare, TrendingUp, Globe2, Gem, Infinity as InfinityIcon, Bookmark, LogIn, User as UserIcon, Play, MonitorPlay, Music as MusicIcon, GraduationCap } from "lucide-react";
 import DownloadButton from "@/components/DownloadButton";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -240,6 +240,9 @@ const Index = () => {
             </Link>
             <Link to="/music" aria-label="Music" className="w-8 h-8 rounded-lg bg-secondary/60 hover:bg-secondary flex items-center justify-center">
               <MusicIcon className="w-4 h-4 text-primary" />
+            </Link>
+            <Link to="/study" aria-label="Study Hub" className="w-8 h-8 rounded-lg bg-secondary/60 hover:bg-secondary flex items-center justify-center">
+              <GraduationCap className="w-4 h-4 text-primary" />
             </Link>
             {user ? (
               <Link to="/dashboard" aria-label="Dashboard" className="w-8 h-8 rounded-lg bg-primary/15 hover:bg-primary/25 flex items-center justify-center">
