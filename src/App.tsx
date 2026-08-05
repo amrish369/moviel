@@ -12,6 +12,7 @@ import Dashboard from "./pages/Dashboard.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import { AuthProvider } from "./hooks/useAuth";
 import Music from "./pages/Music.tsx";
+import Study from "./pages/Study.tsx";
 import ArtistDetail from "./pages/ArtistDetail.tsx";
 import { MusicPlayerProvider } from "./contexts/MusicPlayerContext";
 import MiniPlayer from "./components/MiniPlayer";
@@ -34,6 +35,7 @@ const App = () => (
               <Route path="/watchlist" element={<Watchlist />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/music" element={<Music />} />
+              <Route path="/study" element={<Study />} />
               <Route path="/artist-music" element={<ArtistDetail />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
