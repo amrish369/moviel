@@ -192,6 +192,15 @@ const Index = () => {
                   <SheetTitle className="text-gradient-gold font-display">Sections</SheetTitle>
                 </SheetHeader>
                 <nav className="flex-1 overflow-y-auto p-2">
+                  <SheetClose asChild>
+                    <Link
+                      to="/study"
+                      className="w-full flex items-center gap-3 px-3 py-2.5 mb-1 rounded-md text-sm text-foreground hover:bg-secondary/70 hover:text-primary transition-colors"
+                    >
+                      <GraduationCap className="w-4 h-4 text-primary/70" />
+                      <span>Study Hub (BCA)</span>
+                    </Link>
+                  </SheetClose>
                   {sections.map((s) => (
                     <SheetClose asChild key={s.id}>
                       <button
