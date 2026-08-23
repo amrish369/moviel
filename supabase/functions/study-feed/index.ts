@@ -100,7 +100,8 @@ function scrapeYouTubeSearch(html: string): Song[] {
       const duration = vr.lengthText?.simpleText || '';
       const views = vr.shortViewCountText?.simpleText || vr.viewCountText?.simpleText || '';
       const durSec = parseDur(duration);
-      if (durSec == null || (durSec >= 45 && durSec <= 900)) {
+      // Study content: keep lectures of any length, only drop shorts (<60s)
+      if (durSec == null || durSec >= 60) {
         songs.push({ videoId: vr.videoId, title, channel, thumbnail, duration, views });
       }
     }
