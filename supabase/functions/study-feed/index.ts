@@ -408,6 +408,85 @@ const STUDY_SUFFIXES = [
   'important questions',
 ];
 
+// IGNOU BCA Semester 2 — strict per-subject query sets + relevance keywords.
+interface SubjectDef {
+  queries: string[];
+  keywords: string[];
+  blocked?: string[];
+}
+
+const SUBJECTS: Record<string, SubjectDef> = {
+  'feg-02': {
+    queries: [
+      'FEG 02 IGNOU Foundation Course in English 2',
+      'IGNOU FEG 02 solved assignment lectures',
+      'Foundation Course in English 2 BCA full course',
+      'English grammar communication skills full course hindi',
+    ],
+    keywords: ['feg', 'english', 'grammar', 'communication', 'writing', 'comprehension', 'vocabulary', 'foundation course'],
+  },
+  'mcs-201': {
+    queries: [
+      'MCS 201 IGNOU Programming in C and Python',
+      'IGNOU MCS 201 lectures in hindi',
+      'C programming full course hindi',
+      'Python programming full course hindi',
+    ],
+    keywords: ['mcs 201', 'mcs201', 'c programming', 'c language', 'python', 'programming in c', 'pointer', 'loop', 'function', 'array', 'string'],
+  },
+  'mcs-202': {
+    queries: [
+      'MCS 202 IGNOU Computer Organisation',
+      'IGNOU MCS 202 lectures hindi',
+      'computer organisation and architecture full course hindi',
+      'digital logic computer organization lectures',
+    ],
+    keywords: ['mcs 202', 'mcs202', 'computer organisation', 'computer organization', 'computer architecture', 'coa', 'digital logic', 'memory', 'cpu', 'register', 'instruction'],
+  },
+  'mcs-203': {
+    queries: [
+      'MCS 203 IGNOU Operating Systems',
+      'IGNOU MCS 203 lectures hindi',
+      'operating system full course hindi',
+      'operating system scheduling deadlock lectures',
+    ],
+    keywords: ['mcs 203', 'mcs203', 'operating system', 'os ', 'process', 'scheduling', 'deadlock', 'memory management', 'thread', 'file system', 'paging'],
+  },
+  'mcsl-204': {
+    queries: [
+      'MCSL 204 IGNOU Windows and Linux Lab',
+      'IGNOU MCSL 204 lab practical solution',
+      'linux commands full course hindi',
+      'windows administration tutorial hindi',
+    ],
+    keywords: ['mcsl 204', 'mcsl204', 'linux', 'windows', 'ubuntu', 'shell', 'command', 'terminal', 'lab', 'practical'],
+  },
+  'mcsl-205': {
+    queries: [
+      'MCSL 205 IGNOU C and Python Lab',
+      'IGNOU MCSL 205 lab practical solution',
+      'C programming practical programs lab hindi',
+      'Python practical programs lab hindi',
+    ],
+    keywords: ['mcsl 205', 'mcsl205', 'c program', 'c programming', 'python', 'practical', 'lab', 'program'],
+  },
+};
+
+const GLOBAL_BLOCK = /(song|movie|trailer|comedy|vlog|prank|status|reaction|shorts|dance|remix|gaming)/i;
+
+function normalize(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, ' ');
+}
+
+function isRelevant(title: string, channel: string, def: SubjectDef | null): boolean {
+  const raw = `${title} ${channel}`;
+  if (GLOBAL_BLOCK.test(raw)) return false;
+  if (!def) return true;
+  const text = normalize(raw);
+  if (def.blocked?.some((b) => text.includes(normalize(b).trim()))) return false;
+  return def.keywords.some((k) => text.includes(normalize(k).trim()));
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   try {
