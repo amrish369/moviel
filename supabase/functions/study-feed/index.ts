@@ -493,6 +493,7 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     const q = url.searchParams.get('q')?.trim() || '';
     const semester = url.searchParams.get('semester')?.trim() || '2';
+    const subjectId = url.searchParams.get('subjectId')?.trim().toLowerCase() || '';
     const subject = url.searchParams.get('subject')?.trim() || '';
     const type = url.searchParams.get('type')?.trim().toLowerCase() || 'playlists';
     const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10));
@@ -505,12 +506,18 @@ Deno.serve(async (req) => {
       });
     }
 
-    const base = q
-      ? q
-      : subject
-        ? `BCA ${subject}`
-        : `BCA semester ${semester} all subjects`;
-    const searchQuery = `${base} ${STUDY_SUFFIXES[(page - 1) % STUDY_SUFFIXES.length]}`;
+    const def = SUBJECTS[subjectId] || null;
+    let searchQuery: string;
+    if (def) {
+      const variant = def.queries[(page - 1) % def.queries.length];
+      const cycle = Math.floor((page - 1) / def.queries.length);
+      searchQuery = q
+        ? `${variant} ${q}`
+        : `${variant} ${STUDY_SUFFIXES[cycle % STUDY_SUFFIXES.length]}`;
+    } else {
+      const base = q || (subject ? `BCA ${subject}` : `IGNOU BCA semester ${semester} all subjects`);
+      searchQuery = `${base} ${STUDY_SUFFIXES[(page - 1) % STUDY_SUFFIXES.length]}`;
+    }
 
     const spFilter = type === 'videos' ? 'EgIQAQ%253D%253D' : 'EgIQAw%253D%253D';
     const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery)}&sp=${spFilter}&hl=en&gl=IN&persist_hl=1&persist_gl=1`;
@@ -522,14 +529,16 @@ Deno.serve(async (req) => {
     }
 
     if (type === 'videos') {
-      const videos = scrapeYouTubeSearch(html);
-      return new Response(JSON.stringify({ query: searchQuery, page, count: videos.length, videos, hasMore: true }), {
+      const all = scrapeYouTubeSearch(html);
+      const videos = all.filter((v) => isRelevant(v.title, v.channel, def));
+      return new Response(JSON.stringify({ query: searchQuery, page, count: videos.length, rawCount: all.length, videos, hasMore: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=1800' },
       });
     }
 
-    const playlists = scrapePlaylists(html);
-    return new Response(JSON.stringify({ query: searchQuery, page, count: playlists.length, playlists, hasMore: true }), {
+    const allPl = scrapePlaylists(html);
+    const playlists = allPl.filter((p) => isRelevant(p.title, p.channel, def));
+    return new Response(JSON.stringify({ query: searchQuery, page, count: playlists.length, rawCount: allPl.length, playlists, hasMore: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=1800' },
     });
   } catch (e) {
