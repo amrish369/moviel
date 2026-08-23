@@ -100,7 +100,8 @@ function scrapeYouTubeSearch(html: string): Song[] {
       const duration = vr.lengthText?.simpleText || '';
       const views = vr.shortViewCountText?.simpleText || vr.viewCountText?.simpleText || '';
       const durSec = parseDur(duration);
-      if (durSec == null || (durSec >= 45 && durSec <= 900)) {
+      // Study content: keep lectures of any length, only drop shorts (<60s)
+      if (durSec == null || durSec >= 60) {
         songs.push({ videoId: vr.videoId, title, channel, thumbnail, duration, views });
       }
     }
@@ -407,12 +408,92 @@ const STUDY_SUFFIXES = [
   'important questions',
 ];
 
+// IGNOU BCA Semester 2 — strict per-subject query sets + relevance keywords.
+interface SubjectDef {
+  queries: string[];
+  keywords: string[];
+  blocked?: string[];
+}
+
+const SUBJECTS: Record<string, SubjectDef> = {
+  'feg-02': {
+    queries: [
+      'FEG 02 IGNOU Foundation Course in English 2',
+      'IGNOU FEG 02 solved assignment lectures',
+      'Foundation Course in English 2 BCA full course',
+      'English grammar communication skills full course hindi',
+    ],
+    keywords: ['feg', 'english', 'grammar', 'communication', 'writing', 'comprehension', 'vocabulary', 'foundation course'],
+  },
+  'mcs-201': {
+    queries: [
+      'MCS 201 IGNOU Programming in C and Python',
+      'IGNOU MCS 201 lectures in hindi',
+      'C programming full course hindi',
+      'Python programming full course hindi',
+    ],
+    keywords: ['mcs 201', 'mcs201', 'c programming', 'c language', 'python', 'programming in c', 'pointer', 'loop', 'function', 'array', 'string'],
+  },
+  'mcs-202': {
+    queries: [
+      'MCS 202 IGNOU Computer Organisation',
+      'IGNOU MCS 202 lectures hindi',
+      'computer organisation and architecture full course hindi',
+      'digital logic computer organization lectures',
+    ],
+    keywords: ['mcs 202', 'mcs202', 'computer organisation', 'computer organization', 'computer architecture', 'coa', 'digital logic', 'memory', 'cpu', 'register', 'instruction'],
+  },
+  'mcs-203': {
+    queries: [
+      'MCS 203 IGNOU Operating Systems',
+      'IGNOU MCS 203 lectures hindi',
+      'operating system full course hindi',
+      'operating system scheduling deadlock lectures',
+    ],
+    keywords: ['mcs 203', 'mcs203', 'operating system', 'os ', 'process', 'scheduling', 'deadlock', 'memory management', 'thread', 'file system', 'paging'],
+  },
+  'mcsl-204': {
+    queries: [
+      'MCSL 204 IGNOU Windows and Linux Lab',
+      'IGNOU MCSL 204 lab practical solution',
+      'linux commands full course hindi',
+      'windows administration tutorial hindi',
+    ],
+    keywords: ['mcsl 204', 'mcsl204', 'linux', 'windows', 'ubuntu', 'shell', 'command', 'terminal', 'lab', 'practical'],
+  },
+  'mcsl-205': {
+    queries: [
+      'MCSL 205 IGNOU C and Python Lab',
+      'IGNOU MCSL 205 lab practical solution',
+      'C programming practical programs lab hindi',
+      'Python practical programs lab hindi',
+    ],
+    keywords: ['mcsl 205', 'mcsl205', 'c program', 'c programming', 'python', 'practical', 'lab', 'program'],
+  },
+};
+
+const GLOBAL_BLOCK = /(song|movie|trailer|comedy|vlog|prank|status|reaction|shorts|dance|remix|gaming)/i;
+
+function normalize(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, ' ');
+}
+
+function isRelevant(title: string, channel: string, def: SubjectDef | null): boolean {
+  const raw = `${title} ${channel}`;
+  if (GLOBAL_BLOCK.test(raw)) return false;
+  if (!def) return true;
+  const text = normalize(raw);
+  if (def.blocked?.some((b) => text.includes(normalize(b).trim()))) return false;
+  return def.keywords.some((k) => text.includes(normalize(k).trim()));
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   try {
     const url = new URL(req.url);
     const q = url.searchParams.get('q')?.trim() || '';
     const semester = url.searchParams.get('semester')?.trim() || '2';
+    const subjectId = url.searchParams.get('subjectId')?.trim().toLowerCase() || '';
     const subject = url.searchParams.get('subject')?.trim() || '';
     const type = url.searchParams.get('type')?.trim().toLowerCase() || 'playlists';
     const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10));
@@ -425,12 +506,18 @@ Deno.serve(async (req) => {
       });
     }
 
-    const base = q
-      ? q
-      : subject
-        ? `BCA ${subject}`
-        : `BCA semester ${semester} all subjects`;
-    const searchQuery = `${base} ${STUDY_SUFFIXES[(page - 1) % STUDY_SUFFIXES.length]}`;
+    const def = SUBJECTS[subjectId] || null;
+    let searchQuery: string;
+    if (def) {
+      const variant = def.queries[(page - 1) % def.queries.length];
+      const cycle = Math.floor((page - 1) / def.queries.length);
+      searchQuery = q
+        ? `${variant} ${q}`
+        : `${variant} ${STUDY_SUFFIXES[cycle % STUDY_SUFFIXES.length]}`;
+    } else {
+      const base = q || (subject ? `BCA ${subject}` : `IGNOU BCA semester ${semester} all subjects`);
+      searchQuery = `${base} ${STUDY_SUFFIXES[(page - 1) % STUDY_SUFFIXES.length]}`;
+    }
 
     const spFilter = type === 'videos' ? 'EgIQAQ%253D%253D' : 'EgIQAw%253D%253D';
     const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery)}&sp=${spFilter}&hl=en&gl=IN&persist_hl=1&persist_gl=1`;
@@ -442,14 +529,16 @@ Deno.serve(async (req) => {
     }
 
     if (type === 'videos') {
-      const videos = scrapeYouTubeSearch(html);
-      return new Response(JSON.stringify({ query: searchQuery, page, count: videos.length, videos, hasMore: true }), {
+      const all = scrapeYouTubeSearch(html);
+      const videos = all.filter((v) => isRelevant(v.title, v.channel, def));
+      return new Response(JSON.stringify({ query: searchQuery, page, count: videos.length, rawCount: all.length, videos, hasMore: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=1800' },
       });
     }
 
-    const playlists = scrapePlaylists(html);
-    return new Response(JSON.stringify({ query: searchQuery, page, count: playlists.length, playlists, hasMore: true }), {
+    const allPl = scrapePlaylists(html);
+    const playlists = allPl.filter((p) => isRelevant(p.title, p.channel, def));
+    return new Response(JSON.stringify({ query: searchQuery, page, count: playlists.length, rawCount: allPl.length, playlists, hasMore: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=1800' },
     });
   } catch (e) {
