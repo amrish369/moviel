@@ -9,17 +9,20 @@ import { fetchPlaylistVideos, useStudyFeed, type StudyVideo } from "@/hooks/useS
 const Study = () => {
   const [semester, setSemester] = useState("2");
   const [subjectId, setSubjectId] = useState("all");
+  const [mode, setMode] = useState<"playlists" | "videos">("playlists");
   const [searchInput, setSearchInput] = useState("");
   const [query, setQuery] = useState("");
 
   const sem = getSemester(semester);
-  const subject = subjectId === "all" ? "" : (sem.subjects.find((s) => s.id === subjectId)?.query ?? "");
+  const activeSubject = sem.subjects.find((s) => s.id === subjectId);
+  const subject = activeSubject?.query ?? "";
 
-  const { playlists, isLoading, hasMore, error, loadMore } = useStudyFeed({
+  const { playlists, videos, isLoading, hasMore, error, loadMore } = useStudyFeed({
     semester,
+    subjectId,
     subject,
     query,
-    type: "playlists",
+    type: mode,
   });
 
   const [modalVideos, setModalVideos] = useState<StudyVideo[] | null>(null);
@@ -28,7 +31,7 @@ const Study = () => {
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    document.title = "BCA 2nd Semester Study Playlists — Free Video Lectures | CineRadar";
+    document.title = "IGNOU BCA 2nd Semester Study Playlists — MCS-201 to MCSL-205 | CineRadar";
     let desc = document.querySelector('meta[name="description"]');
     if (!desc) {
       desc = document.createElement("meta");
@@ -37,7 +40,7 @@ const Study = () => {
     }
     desc.setAttribute(
       "content",
-      "BCA 2nd semester ke saare subjects ki free YouTube study playlists — C Programming, Data Structures, DBMS, Digital Electronics aur zyada. Website par hi play karein.",
+      "IGNOU BCA 2nd semester ke saare subjects ki free video lectures aur playlists — FEG-02, MCS-201 Programming in C and Python, MCS-202 Computer Organisation, MCS-203 Operating Systems, MCSL-204 aur MCSL-205 Lab. Website par hi play karein.",
     );
   }, []);
 
@@ -53,13 +56,15 @@ const Study = () => {
 
   const openPlaylist = async (playlistId: string) => {
     setOpeningId(playlistId);
-    const videos = await fetchPlaylistVideos(playlistId);
+    const list = await fetchPlaylistVideos(playlistId);
     setOpeningId(null);
-    if (videos.length) {
-      setModalVideos(videos);
+    if (list.length) {
+      setModalVideos(list);
       setModalIndex(0);
     }
   };
+
+  const isEmpty = mode === "playlists" ? playlists.length === 0 : videos.length === 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -73,7 +78,7 @@ const Study = () => {
           </div>
           <div>
             <h1 className="font-display text-lg font-bold text-gradient-gold leading-tight">Study Hub</h1>
-            <p className="text-[10px] text-muted-foreground">BCA video lectures & playlists</p>
+            <p className="text-[10px] text-muted-foreground">IGNOU BCA lectures & playlists</p>
           </div>
         </div>
       </header>
@@ -95,20 +100,46 @@ const Study = () => {
                 </option>
               ))}
             </select>
+
+            <div className="flex rounded-lg overflow-hidden border border-border ml-auto">
+              {(["playlists", "videos"] as const).map((m) => (
+                <button
+                  key={m}
+                  onClick={() => setMode(m)}
+                  className={`text-xs px-3 py-1.5 transition-colors ${
+                    mode === m ? "bg-primary/20 text-primary font-semibold" : "bg-secondary/60 text-muted-foreground"
+                  }`}
+                >
+                  {m === "playlists" ? "Playlists" : "Videos"}
+                </button>
+              ))}
+            </div>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            {[{ id: "all", label: "All Subjects" }, ...sem.subjects].map((s) => (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+            <button
+              onClick={() => setSubjectId("all")}
+              className={`text-left px-3 py-2 rounded-xl border transition-colors ${
+                subjectId === "all"
+                  ? "bg-primary/15 text-primary border-primary/40"
+                  : "bg-secondary/60 text-foreground border-border hover:border-primary/30"
+              }`}
+            >
+              <span className="block text-xs font-bold">All</span>
+              <span className="block text-[10px] text-muted-foreground">Sabhi subjects</span>
+            </button>
+            {sem.subjects.map((s) => (
               <button
                 key={s.id}
                 onClick={() => setSubjectId(s.id)}
-                className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                className={`text-left px-3 py-2 rounded-xl border transition-colors ${
                   subjectId === s.id
-                    ? "bg-primary/15 text-primary border-primary/40 font-semibold"
+                    ? "bg-primary/15 text-primary border-primary/40"
                     : "bg-secondary/60 text-foreground border-border hover:border-primary/30"
                 }`}
               >
-                {s.label}
+                <span className="block text-xs font-bold">{s.code}</span>
+                <span className="block text-[10px] text-muted-foreground line-clamp-2">{s.label}</span>
               </button>
             ))}
           </div>
@@ -121,7 +152,7 @@ const Study = () => {
             <input
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Topic search karein (e.g. pointers in C, SQL joins)"
+              placeholder={activeSubject ? `${activeSubject.code} me topic search karein` : "Topic search karein (e.g. pointers in C)"}
               className="w-full bg-secondary/60 border border-border rounded-lg pl-9 pr-9 py-2 text-sm text-foreground placeholder:text-muted-foreground"
             />
             {(searchInput || query) && (
@@ -135,33 +166,62 @@ const Study = () => {
               </button>
             )}
           </form>
+
+          {activeSubject && (
+            <p className="text-[11px] text-muted-foreground">
+              Sirf <span className="text-primary font-semibold">{activeSubject.code} — {activeSubject.label}</span> se related content dikh raha hai.
+            </p>
+          )}
         </div>
 
         {error && (
           <div className="bg-cinema-red/10 border border-cinema-red/30 rounded-lg p-3 text-sm text-cinema-red">⚠️ {error}</div>
         )}
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-          {playlists.map((p) => (
-            <div key={p.playlistId} className="relative">
-              <StudyPlaylistCard playlist={p} onClick={() => openPlaylist(p.playlistId)} />
-              {openingId === p.playlistId && (
-                <div className="absolute inset-0 rounded-lg bg-background/70 flex items-center justify-center">
-                  <Loader2 className="w-5 h-5 text-primary animate-spin" />
+        {mode === "playlists" ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {playlists.map((p) => (
+              <div key={p.playlistId} className="relative">
+                <StudyPlaylistCard playlist={p} onClick={() => openPlaylist(p.playlistId)} />
+                {openingId === p.playlistId && (
+                  <div className="absolute inset-0 rounded-lg bg-background/70 flex items-center justify-center">
+                    <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {videos.map((v, i) => (
+              <button
+                key={v.videoId}
+                onClick={() => { setModalVideos(videos); setModalIndex(i); }}
+                className="glass-card rounded-lg overflow-hidden text-left hover:border-primary/30 transition-all active:scale-[0.98]"
+              >
+                <div className="relative aspect-video bg-secondary">
+                  <img src={v.thumbnail} alt={v.title} loading="lazy" decoding="async" className="w-full h-full object-cover" />
+                  {v.duration && (
+                    <span className="absolute bottom-1.5 right-1.5 text-[10px] px-1.5 py-0.5 rounded bg-background/85 text-foreground">{v.duration}</span>
+                  )}
                 </div>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {isLoading && (
-          <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
-            <Loader2 className="w-4 h-4 text-primary animate-spin" /> Playlists load ho rahi hain...
+                <div className="p-2.5">
+                  <h3 className="text-sm font-semibold text-foreground line-clamp-2 leading-snug">{v.title}</h3>
+                  <p className="text-[11px] text-muted-foreground mt-1 line-clamp-1">{v.channel}</p>
+                </div>
+              </button>
+            ))}
           </div>
         )}
 
-        {!isLoading && playlists.length === 0 && (
-          <p className="text-center text-sm text-muted-foreground py-8">Koi playlist nahi mili. Doosra subject ya keyword try karein.</p>
+        {isLoading && (
+          <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
+            <Loader2 className="w-4 h-4 text-primary animate-spin" /> Content load ho raha hai...
+          </div>
+        )}
+
+        {!isLoading && isEmpty && (
+          <p className="text-center text-sm text-muted-foreground py-8">Is subject ke liye kuchh nahi mila. Doosra subject ya keyword try karein.</p>
         )}
 
         <div ref={sentinelRef} className="h-10" />
