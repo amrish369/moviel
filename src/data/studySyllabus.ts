@@ -1,5 +1,6 @@
 export interface Subject {
   id: string;
+  code: string;
   label: string;
   query: string;
 }
@@ -18,13 +19,12 @@ export const SEMESTERS: Semester[] = [
     label: "Semester 2",
     available: true,
     subjects: [
-      { id: "c-programming", label: "C Programming", query: "BCA 2nd semester C Programming" },
-      { id: "data-structures", label: "Data Structures", query: "BCA 2nd semester Data Structures" },
-      { id: "dbms", label: "DBMS", query: "BCA 2nd semester DBMS database management system" },
-      { id: "digital-electronics", label: "Digital Electronics", query: "BCA 2nd semester Digital Electronics" },
-      { id: "maths-2", label: "Mathematics-II", query: "BCA 2nd semester Mathematics 2" },
-      { id: "os", label: "Operating System", query: "BCA 2nd semester Operating System" },
-      { id: "communication", label: "Communication Skills", query: "BCA 2nd semester Communication Skills English" },
+      { id: "feg-02", code: "FEG-02", label: "Foundation Course in English-2", query: "FEG 02 IGNOU Foundation Course in English 2" },
+      { id: "mcs-201", code: "MCS-201", label: "Programming in C and Python", query: "MCS 201 IGNOU Programming in C and Python" },
+      { id: "mcs-202", code: "MCS-202", label: "Computer Organisation", query: "MCS 202 IGNOU Computer Organisation" },
+      { id: "mcs-203", code: "MCS-203", label: "Operating Systems", query: "MCS 203 IGNOU Operating Systems" },
+      { id: "mcsl-204", code: "MCSL-204", label: "Windows and Linux Lab", query: "MCSL 204 IGNOU Windows and Linux Lab" },
+      { id: "mcsl-205", code: "MCSL-205", label: "C and Python Lab", query: "MCSL 205 IGNOU C and Python Lab" },
     ],
   },
   { id: "3", label: "Semester 3", available: false, subjects: [] },
