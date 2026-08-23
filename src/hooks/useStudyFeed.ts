@@ -27,12 +27,13 @@ export const fetchPlaylistVideos = async (playlistId: string): Promise<StudyVide
 
 interface Params {
   semester: string;
+  subjectId: string;
   subject: string;
   query: string;
   type: "playlists" | "videos";
 }
 
-export const useStudyFeed = ({ semester, subject, query, type }: Params) => {
+export const useStudyFeed = ({ semester, subjectId, subject, query, type }: Params) => {
   const [playlists, setPlaylists] = useState<StudyPlaylist[]>([]);
   const [videos, setVideos] = useState<StudyVideo[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -50,13 +51,14 @@ export const useStudyFeed = ({ semester, subject, query, type }: Params) => {
     try {
       let attempts = 0;
       let added = 0;
-      while (attempts < 4 && added === 0) {
+      while (attempts < 5 && added === 0) {
         const params = new URLSearchParams({
           semester,
           subject,
           type,
           page: String(pageRef.current),
         });
+        if (subjectId && subjectId !== "all") params.set("subjectId", subjectId);
         if (query.trim()) params.set("q", query.trim());
         const res = await fetch(`${FN_URL}?${params}`);
         const json = await res.json();
@@ -77,14 +79,14 @@ export const useStudyFeed = ({ semester, subject, query, type }: Params) => {
           if (fresh.length) setVideos((prev) => [...prev, ...fresh]);
         }
       }
-      if (added === 0 && pageRef.current > 6) setHasMore(false);
+      if (added === 0 && pageRef.current > 12) setHasMore(false);
     } catch {
       setError("Content load nahi ho paaya. Dobara try karein.");
     } finally {
       loadingRef.current = false;
       setIsLoading(false);
     }
-  }, [semester, subject, query, type]);
+  }, [semester, subjectId, subject, query, type]);
 
   // reset when filters change
   useEffect(() => {
@@ -95,7 +97,7 @@ export const useStudyFeed = ({ semester, subject, query, type }: Params) => {
     setHasMore(true);
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [semester, subject, query, type]);
+  }, [semester, subjectId, subject, query, type]);
 
   return { playlists, videos, isLoading, hasMore, error, loadMore: load };
 };
