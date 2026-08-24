@@ -233,6 +233,7 @@ const Study = () => {
         <StudyVideoModal
           videos={modalVideos}
           index={modalIndex}
+          subjectId={subjectId}
           onIndexChange={setModalIndex}
           onClose={() => setModalVideos(null)}
         />
