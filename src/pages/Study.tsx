@@ -1,15 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, GraduationCap, Loader2, Search, X } from "lucide-react";
+import { ArrowLeft, GraduationCap, Loader2, Search, X, BookmarkCheck, CheckCircle2, Bookmark } from "lucide-react";
 import StudyPlaylistCard from "@/components/StudyPlaylistCard";
 import StudyVideoModal from "@/components/StudyVideoModal";
 import { SEMESTERS, getSemester } from "@/data/studySyllabus";
 import { fetchPlaylistVideos, useStudyFeed, type StudyVideo } from "@/hooks/useStudyFeed";
+import { useStudyLibrary } from "@/hooks/useStudyLibrary";
 
 const Study = () => {
   const [semester, setSemester] = useState("2");
   const [subjectId, setSubjectId] = useState("all");
-  const [mode, setMode] = useState<"playlists" | "videos">("playlists");
+  const [mode, setMode] = useState<"playlists" | "videos" | "saved">("playlists");
+
   const [searchInput, setSearchInput] = useState("");
   const [query, setQuery] = useState("");
 
@@ -178,7 +180,32 @@ const Study = () => {
           <div className="bg-cinema-red/10 border border-cinema-red/30 rounded-lg p-3 text-sm text-cinema-red">⚠️ {error}</div>
         )}
 
-        {mode === "playlists" ? (
+        {mode === "saved" ? (
+          savedVideos.length ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {savedVideos.map((v, i) => (
+                <button
+                  key={v.videoId}
+                  onClick={() => { setModalVideos(savedVideos as StudyVideo[]); setModalIndex(i); }}
+                  className="glass-card rounded-lg overflow-hidden text-left hover:border-primary/30 transition-all active:scale-[0.98]"
+                >
+                  <div className="relative aspect-video bg-secondary">
+                    <img src={v.thumbnail} alt={v.title} loading="lazy" decoding="async" className="w-full h-full object-cover" />
+                    <BookmarkCheck className="absolute top-1.5 right-1.5 w-4 h-4 text-primary" />
+                  </div>
+                  <div className="p-2.5">
+                    <h3 className="text-sm font-semibold text-foreground line-clamp-2 leading-snug">{v.title}</h3>
+                    <p className="text-[11px] text-muted-foreground mt-1 line-clamp-1">{v.channel}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="text-center text-sm text-muted-foreground py-8">
+              Koi saved video nahi. Player me bookmark icon dabakar important lectures save karein.
+            </p>
+          )
+        ) : mode === "playlists" ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {playlists.map((p) => (
               <div key={p.playlistId} className="relative">
@@ -193,34 +220,45 @@ const Study = () => {
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {videos.map((v, i) => (
-              <button
-                key={v.videoId}
-                onClick={() => { setModalVideos(videos); setModalIndex(i); }}
-                className="glass-card rounded-lg overflow-hidden text-left hover:border-primary/30 transition-all active:scale-[0.98]"
-              >
-                <div className="relative aspect-video bg-secondary">
-                  <img src={v.thumbnail} alt={v.title} loading="lazy" decoding="async" className="w-full h-full object-cover" />
-                  {v.duration && (
-                    <span className="absolute bottom-1.5 right-1.5 text-[10px] px-1.5 py-0.5 rounded bg-background/85 text-foreground">{v.duration}</span>
-                  )}
-                </div>
-                <div className="p-2.5">
-                  <h3 className="text-sm font-semibold text-foreground line-clamp-2 leading-snug">{v.title}</h3>
-                  <p className="text-[11px] text-muted-foreground mt-1 line-clamp-1">{v.channel}</p>
-                </div>
-              </button>
-            ))}
+            {videos.map((v, i) => {
+              const p = progress[v.videoId];
+              const pct = p?.duration ? Math.min(100, (p.seconds / p.duration) * 100) : p?.completed ? 100 : 0;
+              return (
+                <button
+                  key={v.videoId}
+                  onClick={() => { setModalVideos(videos); setModalIndex(i); }}
+                  className="glass-card rounded-lg overflow-hidden text-left hover:border-primary/30 transition-all active:scale-[0.98]"
+                >
+                  <div className="relative aspect-video bg-secondary">
+                    <img src={v.thumbnail} alt={v.title} loading="lazy" decoding="async" className="w-full h-full object-cover" />
+                    {v.duration && (
+                      <span className="absolute bottom-1.5 right-1.5 text-[10px] px-1.5 py-0.5 rounded bg-background/85 text-foreground">{v.duration}</span>
+                    )}
+                    {p?.completed && <CheckCircle2 className="absolute top-1.5 left-1.5 w-4 h-4 text-primary" />}
+                    {bookmarks[v.videoId] && <BookmarkCheck className="absolute top-1.5 right-1.5 w-4 h-4 text-primary" />}
+                    {pct > 0 && (
+                      <span className="absolute bottom-0 left-0 right-0 h-1 bg-background/70">
+                        <span className="block h-full bg-primary" style={{ width: `${pct}%` }} />
+                      </span>
+                    )}
+                  </div>
+                  <div className="p-2.5">
+                    <h3 className="text-sm font-semibold text-foreground line-clamp-2 leading-snug">{v.title}</h3>
+                    <p className="text-[11px] text-muted-foreground mt-1 line-clamp-1">{v.channel}</p>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         )}
 
-        {isLoading && (
+        {mode !== "saved" && isLoading && (
           <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
             <Loader2 className="w-4 h-4 text-primary animate-spin" /> Content load ho raha hai...
           </div>
         )}
 
-        {!isLoading && isEmpty && (
+        {mode !== "saved" && !isLoading && isEmpty && (
           <p className="text-center text-sm text-muted-foreground py-8">Is subject ke liye kuchh nahi mila. Doosra subject ya keyword try karein.</p>
         )}
 
@@ -231,6 +269,7 @@ const Study = () => {
         <StudyVideoModal
           videos={modalVideos}
           index={modalIndex}
+          subjectId={subjectId}
           onIndexChange={setModalIndex}
           onClose={() => setModalVideos(null)}
         />
