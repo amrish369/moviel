@@ -1,15 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, GraduationCap, Loader2, Search, X } from "lucide-react";
+import { ArrowLeft, GraduationCap, Loader2, Search, X, BookmarkCheck, CheckCircle2, Bookmark } from "lucide-react";
 import StudyPlaylistCard from "@/components/StudyPlaylistCard";
 import StudyVideoModal from "@/components/StudyVideoModal";
 import { SEMESTERS, getSemester } from "@/data/studySyllabus";
 import { fetchPlaylistVideos, useStudyFeed, type StudyVideo } from "@/hooks/useStudyFeed";
+import { useStudyLibrary } from "@/hooks/useStudyLibrary";
 
 const Study = () => {
   const [semester, setSemester] = useState("2");
   const [subjectId, setSubjectId] = useState("all");
-  const [mode, setMode] = useState<"playlists" | "videos">("playlists");
+  const [mode, setMode] = useState<"playlists" | "videos" | "saved">("playlists");
+
   const [searchInput, setSearchInput] = useState("");
   const [query, setQuery] = useState("");
 
