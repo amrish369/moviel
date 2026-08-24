@@ -424,6 +424,7 @@ const SUBJECTS: Record<string, SubjectDef> = {
       'English grammar communication skills full course hindi',
     ],
     keywords: ['feg', 'english', 'grammar', 'communication', 'writing', 'comprehension', 'vocabulary', 'foundation course'],
+    blocked: ['ba history', 'ba 1st year', 'b ed', 'environmental studies', 'political science', 'sociology', 'hindi sahitya'],
   },
   'mcs-201': {
     queries: [
