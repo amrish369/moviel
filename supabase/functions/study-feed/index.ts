@@ -513,7 +513,9 @@ Deno.serve(async (req) => {
       const cycle = Math.floor((page - 1) / def.queries.length);
       searchQuery = q
         ? `${variant} ${q}`
-        : `${variant} ${STUDY_SUFFIXES[cycle % STUDY_SUFFIXES.length]}`;
+        : cycle === 0
+          ? variant
+          : `${variant} ${STUDY_SUFFIXES[(cycle - 1) % STUDY_SUFFIXES.length]}`;
     } else {
       const base = q || (subject ? `BCA ${subject}` : `IGNOU BCA semester ${semester} all subjects`);
       searchQuery = `${base} ${STUDY_SUFFIXES[(page - 1) % STUDY_SUFFIXES.length]}`;
