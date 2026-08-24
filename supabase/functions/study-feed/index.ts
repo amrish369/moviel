@@ -424,6 +424,7 @@ const SUBJECTS: Record<string, SubjectDef> = {
       'English grammar communication skills full course hindi',
     ],
     keywords: ['feg', 'english', 'grammar', 'communication', 'writing', 'comprehension', 'vocabulary', 'foundation course'],
+    blocked: ['ba history', 'ba 1st year', 'b ed', 'environmental studies', 'political science', 'sociology', 'hindi sahitya'],
   },
   'mcs-201': {
     queries: [
@@ -513,7 +514,9 @@ Deno.serve(async (req) => {
       const cycle = Math.floor((page - 1) / def.queries.length);
       searchQuery = q
         ? `${variant} ${q}`
-        : `${variant} ${STUDY_SUFFIXES[cycle % STUDY_SUFFIXES.length]}`;
+        : cycle === 0
+          ? variant
+          : `${variant} ${STUDY_SUFFIXES[(cycle - 1) % STUDY_SUFFIXES.length]}`;
     } else {
       const base = q || (subject ? `BCA ${subject}` : `IGNOU BCA semester ${semester} all subjects`);
       searchQuery = `${base} ${STUDY_SUFFIXES[(page - 1) % STUDY_SUFFIXES.length]}`;
