@@ -22,12 +22,24 @@ export interface StudyBookmark {
   createdAt: number;
 }
 
+export interface StudyQuizResult {
+  videoId: string;
+  subjectId: string;
+  title: string;
+  score: number;
+  total: number;
+  weakTopics: string[];
+  at: number;
+}
+
 const PROGRESS_KEY = "cineradar:study:progress";
 const BOOKMARK_KEY = "cineradar:study:bookmarks";
+const QUIZ_KEY = "cineradar:study:quiz";
 const COMPLETE_RATIO = 0.9;
 
 type ProgressMap = Record<string, StudyProgressEntry>;
 type BookmarkMap = Record<string, StudyBookmark>;
+type QuizMap = Record<string, StudyQuizResult>;
 
 function read<T>(key: string): T {
   try {
