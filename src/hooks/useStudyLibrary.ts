@@ -60,11 +60,13 @@ const emit = () => window.dispatchEvent(new Event(EVT));
 export function useStudyLibrary() {
   const [progress, setProgress] = useState<ProgressMap>(() => read<ProgressMap>(PROGRESS_KEY));
   const [bookmarks, setBookmarks] = useState<BookmarkMap>(() => read<BookmarkMap>(BOOKMARK_KEY));
+  const [quizzes, setQuizzes] = useState<QuizMap>(() => read<QuizMap>(QUIZ_KEY));
 
   useEffect(() => {
     const sync = () => {
       setProgress(read<ProgressMap>(PROGRESS_KEY));
       setBookmarks(read<BookmarkMap>(BOOKMARK_KEY));
+      setQuizzes(read<QuizMap>(QUIZ_KEY));
     };
     window.addEventListener(EVT, sync);
     window.addEventListener("storage", sync);
