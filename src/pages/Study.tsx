@@ -19,12 +19,23 @@ const Study = () => {
   const activeSubject = sem.subjects.find((s) => s.id === subjectId);
   const subject = activeSubject?.query ?? "";
 
+  const { progress, bookmarks, statsFor, bookmarksFor } = useStudyLibrary();
+  const savedVideos = bookmarksFor(subjectId).map((b) => ({
+    videoId: b.videoId,
+    title: b.title,
+    channel: b.channel,
+    thumbnail: b.thumbnail,
+    duration: b.duration ?? "",
+    views: "",
+  }));
+  const stats = statsFor(subjectId);
+
   const { playlists, videos, isLoading, hasMore, error, loadMore } = useStudyFeed({
     semester,
     subjectId,
     subject,
     query,
-    type: mode,
+    type: mode === "saved" ? "videos" : mode,
   });
 
   const [modalVideos, setModalVideos] = useState<StudyVideo[] | null>(null);
