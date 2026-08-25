@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { X, SkipBack, SkipForward, Bookmark, BookmarkCheck, CheckCircle2, Circle, RotateCcw } from "lucide-react";
+import { X, SkipBack, SkipForward, Bookmark, BookmarkCheck, CheckCircle2, Circle, RotateCcw, Brain } from "lucide-react";
 import type { StudyVideo } from "@/hooks/useStudyFeed";
 import { useStudyLibrary } from "@/hooks/useStudyLibrary";
+import StudyQuiz from "@/components/StudyQuiz";
 
 interface Props {
   videos: StudyVideo[];
