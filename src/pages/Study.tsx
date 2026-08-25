@@ -19,12 +19,23 @@ const Study = () => {
   const activeSubject = sem.subjects.find((s) => s.id === subjectId);
   const subject = activeSubject?.query ?? "";
 
+  const { progress, bookmarks, statsFor, bookmarksFor } = useStudyLibrary();
+  const savedVideos = bookmarksFor(subjectId).map((b) => ({
+    videoId: b.videoId,
+    title: b.title,
+    channel: b.channel,
+    thumbnail: b.thumbnail,
+    duration: b.duration ?? "",
+    views: "",
+  }));
+  const stats = statsFor(subjectId);
+
   const { playlists, videos, isLoading, hasMore, error, loadMore } = useStudyFeed({
     semester,
     subjectId,
     subject,
     query,
-    type: mode,
+    type: mode === "saved" ? "videos" : mode,
   });
 
   const [modalVideos, setModalVideos] = useState<StudyVideo[] | null>(null);
@@ -104,15 +115,16 @@ const Study = () => {
             </select>
 
             <div className="flex rounded-lg overflow-hidden border border-border ml-auto">
-              {(["playlists", "videos"] as const).map((m) => (
+              {(["playlists", "videos", "saved"] as const).map((m) => (
                 <button
                   key={m}
                   onClick={() => setMode(m)}
-                  className={`text-xs px-3 py-1.5 transition-colors ${
+                  className={`flex items-center gap-1 text-xs px-3 py-1.5 transition-colors ${
                     mode === m ? "bg-primary/20 text-primary font-semibold" : "bg-secondary/60 text-muted-foreground"
                   }`}
                 >
-                  {m === "playlists" ? "Playlists" : "Videos"}
+                  {m === "saved" && <Bookmark className="w-3 h-3" />}
+                  {m === "playlists" ? "Playlists" : m === "videos" ? "Videos" : "Saved"}
                 </button>
               ))}
             </div>
@@ -175,6 +187,27 @@ const Study = () => {
             </p>
           )}
         </div>
+
+        {/* Progress */}
+        <div className="glass-card rounded-xl p-3 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs font-semibold text-foreground">
+              {activeSubject ? `${activeSubject.code} progress` : "Overall progress"}
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              {stats.completed}/{stats.started} complete • {savedVideos.length} saved
+            </p>
+          </div>
+          <div className="h-2 rounded-full bg-secondary overflow-hidden">
+            <div className="h-full bg-primary transition-all" style={{ width: `${stats.percent}%` }} />
+          </div>
+          <p className="text-[10px] text-muted-foreground">
+            {stats.started === 0
+              ? "Koi lecture start nahi kiya. Video open karte hi progress track hone lagega."
+              : `${stats.percent}% complete • ${stats.inProgress} lecture chal rahe hain (resume support ke saath)`}
+          </p>
+        </div>
+
 
         {error && (
           <div className="bg-cinema-red/10 border border-cinema-red/30 rounded-lg p-3 text-sm text-cinema-red">⚠️ {error}</div>
