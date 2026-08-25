@@ -187,6 +187,27 @@ const Study = () => {
           )}
         </div>
 
+        {/* Progress */}
+        <div className="glass-card rounded-xl p-3 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs font-semibold text-foreground">
+              {activeSubject ? `${activeSubject.code} progress` : "Overall progress"}
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              {stats.completed}/{stats.started} complete • {savedVideos.length} saved
+            </p>
+          </div>
+          <div className="h-2 rounded-full bg-secondary overflow-hidden">
+            <div className="h-full bg-primary transition-all" style={{ width: `${stats.percent}%` }} />
+          </div>
+          <p className="text-[10px] text-muted-foreground">
+            {stats.started === 0
+              ? "Koi lecture start nahi kiya. Video open karte hi progress track hone lagega."
+              : `${stats.percent}% complete • ${stats.inProgress} lecture chal rahe hain (resume support ke saath)`}
+          </p>
+        </div>
+
+
         {error && (
           <div className="bg-cinema-red/10 border border-cinema-red/30 rounded-lg p-3 text-sm text-cinema-red">⚠️ {error}</div>
         )}
