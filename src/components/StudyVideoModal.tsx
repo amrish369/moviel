@@ -143,6 +143,15 @@ const StudyVideoModal = ({ videos, index, subjectId, onClose, onIndexChange }: P
           {entry?.completed ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Circle className="w-3.5 h-3.5" />}
           {entry?.completed ? "Completed" : "Mark complete"}
         </button>
+        <button
+          onClick={() => setShowQuiz((s) => !s)}
+          className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs ${
+            showQuiz ? "bg-primary/20 text-primary" : "bg-secondary text-foreground"
+          }`}
+        >
+          <Brain className="w-3.5 h-3.5" /> Quiz
+          {quizzes[current.videoId] && ` ${quizzes[current.videoId].score}/${quizzes[current.videoId].total}`}
+        </button>
         {startAt > 0 && (
           <span className="flex items-center gap-1 text-[11px] text-primary">
             <RotateCcw className="w-3 h-3" /> Resumed at {fmt(startAt)}
@@ -151,6 +160,15 @@ const StudyVideoModal = ({ videos, index, subjectId, onClose, onIndexChange }: P
       </div>
 
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
+        {showQuiz && (
+          <StudyQuiz
+            key={current.videoId}
+            videoId={current.videoId}
+            title={current.title}
+            subjectId={subjectId}
+            onClose={() => setShowQuiz(false)}
+          />
+        )}
         {videos.map((v, i) => {
           const p = progress[v.videoId];
           const pct = p?.duration ? Math.min(100, (p.seconds / p.duration) * 100) : p?.completed ? 100 : 0;
