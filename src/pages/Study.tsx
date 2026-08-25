@@ -115,15 +115,16 @@ const Study = () => {
             </select>
 
             <div className="flex rounded-lg overflow-hidden border border-border ml-auto">
-              {(["playlists", "videos"] as const).map((m) => (
+              {(["playlists", "videos", "saved"] as const).map((m) => (
                 <button
                   key={m}
                   onClick={() => setMode(m)}
-                  className={`text-xs px-3 py-1.5 transition-colors ${
+                  className={`flex items-center gap-1 text-xs px-3 py-1.5 transition-colors ${
                     mode === m ? "bg-primary/20 text-primary font-semibold" : "bg-secondary/60 text-muted-foreground"
                   }`}
                 >
-                  {m === "playlists" ? "Playlists" : "Videos"}
+                  {m === "saved" && <Bookmark className="w-3 h-3" />}
+                  {m === "playlists" ? "Playlists" : m === "videos" ? "Videos" : "Saved"}
                 </button>
               ))}
             </div>
