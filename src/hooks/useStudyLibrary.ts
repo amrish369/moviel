@@ -139,5 +139,43 @@ export function useStudyLibrary() {
     [bookmarks],
   );
 
-  return { progress, bookmarks, saveProgress, setCompleted, resumeAt, toggleBookmark, statsFor, bookmarksFor };
+  const saveQuizResult = useCallback((result: Omit<StudyQuizResult, "at">) => {
+    const map = read<QuizMap>(QUIZ_KEY);
+    map[result.videoId] = { ...result, at: Date.now() };
+    write(QUIZ_KEY, map);
+    setQuizzes(map);
+    emit();
+  }, []);
+
+  const quizStatsFor = useCallback(
+    (subjectId: string) => {
+      const list = Object.values(quizzes).filter(
+        (q) => !subjectId || subjectId === "all" || q.subjectId === subjectId,
+      );
+      const score = list.reduce((s, q) => s + q.score, 0);
+      const total = list.reduce((s, q) => s + q.total, 0);
+      const counts: Record<string, number> = {};
+      list.forEach((q) => q.weakTopics.forEach((t) => (counts[t] = (counts[t] || 0) + 1)));
+      const weakTopics = Object.entries(counts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 6)
+        .map(([topic, count]) => ({ topic, count }));
+      return { attempts: list.length, score, total, accuracy: total ? Math.round((score / total) * 100) : 0, weakTopics };
+    },
+    [quizzes],
+  );
+
+  return {
+    progress,
+    bookmarks,
+    quizzes,
+    saveProgress,
+    setCompleted,
+    resumeAt,
+    toggleBookmark,
+    statsFor,
+    bookmarksFor,
+    saveQuizResult,
+    quizStatsFor,
+  };
 }
