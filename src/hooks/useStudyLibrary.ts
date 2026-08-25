@@ -22,12 +22,24 @@ export interface StudyBookmark {
   createdAt: number;
 }
 
+export interface StudyQuizResult {
+  videoId: string;
+  subjectId: string;
+  title: string;
+  score: number;
+  total: number;
+  weakTopics: string[];
+  at: number;
+}
+
 const PROGRESS_KEY = "cineradar:study:progress";
 const BOOKMARK_KEY = "cineradar:study:bookmarks";
+const QUIZ_KEY = "cineradar:study:quiz";
 const COMPLETE_RATIO = 0.9;
 
 type ProgressMap = Record<string, StudyProgressEntry>;
 type BookmarkMap = Record<string, StudyBookmark>;
+type QuizMap = Record<string, StudyQuizResult>;
 
 function read<T>(key: string): T {
   try {
@@ -48,11 +60,13 @@ const emit = () => window.dispatchEvent(new Event(EVT));
 export function useStudyLibrary() {
   const [progress, setProgress] = useState<ProgressMap>(() => read<ProgressMap>(PROGRESS_KEY));
   const [bookmarks, setBookmarks] = useState<BookmarkMap>(() => read<BookmarkMap>(BOOKMARK_KEY));
+  const [quizzes, setQuizzes] = useState<QuizMap>(() => read<QuizMap>(QUIZ_KEY));
 
   useEffect(() => {
     const sync = () => {
       setProgress(read<ProgressMap>(PROGRESS_KEY));
       setBookmarks(read<BookmarkMap>(BOOKMARK_KEY));
+      setQuizzes(read<QuizMap>(QUIZ_KEY));
     };
     window.addEventListener(EVT, sync);
     window.addEventListener("storage", sync);
@@ -127,5 +141,43 @@ export function useStudyLibrary() {
     [bookmarks],
   );
 
-  return { progress, bookmarks, saveProgress, setCompleted, resumeAt, toggleBookmark, statsFor, bookmarksFor };
+  const saveQuizResult = useCallback((result: Omit<StudyQuizResult, "at">) => {
+    const map = read<QuizMap>(QUIZ_KEY);
+    map[result.videoId] = { ...result, at: Date.now() };
+    write(QUIZ_KEY, map);
+    setQuizzes(map);
+    emit();
+  }, []);
+
+  const quizStatsFor = useCallback(
+    (subjectId: string) => {
+      const list = Object.values(quizzes).filter(
+        (q) => !subjectId || subjectId === "all" || q.subjectId === subjectId,
+      );
+      const score = list.reduce((s, q) => s + q.score, 0);
+      const total = list.reduce((s, q) => s + q.total, 0);
+      const counts: Record<string, number> = {};
+      list.forEach((q) => q.weakTopics.forEach((t) => (counts[t] = (counts[t] || 0) + 1)));
+      const weakTopics = Object.entries(counts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 6)
+        .map(([topic, count]) => ({ topic, count }));
+      return { attempts: list.length, score, total, accuracy: total ? Math.round((score / total) * 100) : 0, weakTopics };
+    },
+    [quizzes],
+  );
+
+  return {
+    progress,
+    bookmarks,
+    quizzes,
+    saveProgress,
+    setCompleted,
+    resumeAt,
+    toggleBookmark,
+    statsFor,
+    bookmarksFor,
+    saveQuizResult,
+    quizStatsFor,
+  };
 }
