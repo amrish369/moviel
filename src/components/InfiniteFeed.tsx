@@ -77,7 +77,8 @@ const FeedCard = ({ item, liked, saved, onLike, onSave }: {
         {item.overview && (
           <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">{item.overview}</p>
         )}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center flex-wrap gap-2">
+
           <button
             onClick={(e) => { e.stopPropagation(); onLike(item); }}
             className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-full transition-colors ${
