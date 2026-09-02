@@ -19,7 +19,7 @@ const Study = () => {
   const activeSubject = sem.subjects.find((s) => s.id === subjectId);
   const subject = activeSubject?.query ?? "";
 
-  const { progress, bookmarks, statsFor, bookmarksFor } = useStudyLibrary();
+  const { progress, bookmarks, statsFor, bookmarksFor, quizStatsFor } = useStudyLibrary();
   const savedVideos = bookmarksFor(subjectId).map((b) => ({
     videoId: b.videoId,
     title: b.title,
@@ -29,6 +29,7 @@ const Study = () => {
     views: "",
   }));
   const stats = statsFor(subjectId);
+  const quizStats = quizStatsFor(subjectId);
 
   const { playlists, videos, isLoading, hasMore, error, loadMore } = useStudyFeed({
     semester,
@@ -206,7 +207,25 @@ const Study = () => {
               ? "Koi lecture start nahi kiya. Video open karte hi progress track hone lagega."
               : `${stats.percent}% complete • ${stats.inProgress} lecture chal rahe hain (resume support ke saath)`}
           </p>
+          {quizStats.attempts > 0 && (
+            <div className="pt-1 border-t border-border/60 space-y-1.5">
+              <p className="text-[11px] text-muted-foreground">
+                Quiz accuracy: <span className="text-primary font-semibold">{quizStats.accuracy}%</span> ({quizStats.score}/{quizStats.total} correct, {quizStats.attempts} quizzes)
+              </p>
+              {quizStats.weakTopics.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  <span className="text-[10px] text-muted-foreground">Weak topics:</span>
+                  {quizStats.weakTopics.map((w) => (
+                    <span key={w.topic} className="text-[10px] px-2 py-0.5 rounded-full bg-cinema-red/10 text-cinema-red border border-cinema-red/30">
+                      {w.topic} {w.count > 1 && `×${w.count}`}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
+
 
 
         {error && (
