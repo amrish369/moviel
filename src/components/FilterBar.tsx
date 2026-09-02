@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Search, SlidersHorizontal, X } from "lucide-react";
 
 interface FilterBarProps {
   onSearch: (query: string) => void;
@@ -17,6 +17,14 @@ const FilterBar = ({ onSearch, onMoodChange, onCategoryChange, mood, category }:
   const activeMood = mood ?? "Mixed";
   const activeCategory = category ?? "All";
   const [showFilters, setShowFilters] = useState(false);
+  const onSearchRef = useRef(onSearch);
+  onSearchRef.current = onSearch;
+
+  // Live (debounced) search — pehle sirf Enter par chalta tha
+  useEffect(() => {
+    const t = setTimeout(() => onSearchRef.current(query), 350);
+    return () => clearTimeout(t);
+  }, [query]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,8 +41,18 @@ const FilterBar = ({ onSearch, onMoodChange, onCategoryChange, mood, category }:
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search movie, series, or keyword..."
-            className="w-full pl-10 pr-4 py-3 rounded-lg bg-secondary border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 font-body text-sm"
+            className="w-full pl-10 pr-9 py-3 rounded-lg bg-secondary border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 font-body text-sm"
           />
+          {query && (
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              aria-label="Clear search"
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
         <button
           type="button"
@@ -44,6 +62,7 @@ const FilterBar = ({ onSearch, onMoodChange, onCategoryChange, mood, category }:
           <SlidersHorizontal className="w-4 h-4 text-muted-foreground" />
         </button>
       </form>
+
 
       {showFilters && (
         <div className="space-y-3 glass-card rounded-lg p-4 animate-in slide-in-from-top-2">
