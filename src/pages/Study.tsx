@@ -19,7 +19,7 @@ const Study = () => {
   const activeSubject = sem.subjects.find((s) => s.id === subjectId);
   const subject = activeSubject?.query ?? "";
 
-  const { progress, bookmarks, statsFor, bookmarksFor } = useStudyLibrary();
+  const { progress, bookmarks, statsFor, bookmarksFor, quizStatsFor } = useStudyLibrary();
   const savedVideos = bookmarksFor(subjectId).map((b) => ({
     videoId: b.videoId,
     title: b.title,
