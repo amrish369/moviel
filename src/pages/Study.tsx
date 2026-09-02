@@ -29,6 +29,7 @@ const Study = () => {
     views: "",
   }));
   const stats = statsFor(subjectId);
+  const quizStats = quizStatsFor(subjectId);
 
   const { playlists, videos, isLoading, hasMore, error, loadMore } = useStudyFeed({
     semester,
