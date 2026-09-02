@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Search, SlidersHorizontal, X } from "lucide-react";
 
 interface FilterBarProps {
   onSearch: (query: string) => void;
