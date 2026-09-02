@@ -16,8 +16,9 @@ const StudyVideoModal = ({ videos, index, subjectId, onClose, onIndexChange }: P
   const current = videos[index];
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const timeRef = useRef({ seconds: 0, duration: 0 });
-  const { progress, bookmarks, saveProgress, setCompleted, resumeAt, toggleBookmark } = useStudyLibrary();
+  const { progress, bookmarks, quizzes, saveProgress, setCompleted, resumeAt, toggleBookmark } = useStudyLibrary();
   const [startAt, setStartAt] = useState(0);
+  const [showQuiz, setShowQuiz] = useState(false);
 
   // Compute resume point when the video changes
   useEffect(() => {
