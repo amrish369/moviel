@@ -50,6 +50,7 @@ const App = () => (
             </Routes>
             <MiniPlayer />
             <ConsentBanner />
+            <AdsterraScripts />
           </MusicPlayerProvider>
         </AuthProvider>
       </BrowserRouter>
