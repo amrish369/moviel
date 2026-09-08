@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loader2, Star, Heart, Sparkles, Bookmark } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +9,9 @@ import {
 import { useUserLibrary } from "@/hooks/useUserLibrary";
 import DownloadButton from "./DownloadButton";
 import PlayOnTelegram from "./PlayOnTelegram";
+import AdSlot from "./AdSlot";
+import AffiliateBanner from "./AffiliateBanner";
+import { AD_SLOTS } from "@/config/ads";
 
 interface FeedItem {
   id: number;
@@ -207,17 +210,25 @@ const InfiniteFeed = ({ mood, category }: { mood?: string; category?: string }) 
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {items.map((it) => (
-          <FeedCard
-            key={it.id}
-            item={it}
-            liked={likes.includes(it.id)}
-            saved={watchlist.includes(it.id)}
-            onLike={toggleLike}
-            onSave={toggleWatchlist}
-          />
+        {items.map((it, i) => (
+          <Fragment key={it.id}>
+            <FeedCard
+              item={it}
+              liked={likes.includes(it.id)}
+              saved={watchlist.includes(it.id)}
+              onLike={toggleLike}
+              onSave={toggleWatchlist}
+            />
+            {i > 0 && (i + 1) % 6 === 0 && (
+              <div className="sm:col-span-2 lg:col-span-3 space-y-3">
+                <AdSlot slot={AD_SLOTS.inFeed} format="fluid" layout="in-article" minHeight={200} />
+                <AffiliateBanner index={Math.floor(i / 6)} />
+              </div>
+            )}
+          </Fragment>
         ))}
       </div>
+
 
       <div ref={sentinelRef} className="py-6 flex items-center justify-center">
         {loading && <Loader2 className="w-5 h-5 text-primary animate-spin" />}

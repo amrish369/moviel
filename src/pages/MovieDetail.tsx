@@ -8,6 +8,10 @@ import { useMovieDetail } from "@/hooks/useMovieDetail";
 import { usePerfTracking } from "@/hooks/usePerfTracking";
 import MoviePoster from "@/components/MoviePoster";
 import DownloadButton from "@/components/DownloadButton";
+import AdSlot from "@/components/AdSlot";
+import AffiliateBanner from "@/components/AffiliateBanner";
+import SiteFooter from "@/components/SiteFooter";
+import { AD_SLOTS } from "@/config/ads";
 import MovieSongsReel from "@/components/MovieSongsReel";
 
 const MovieDetailPage = () => {
@@ -413,9 +417,9 @@ const MovieDetailPage = () => {
           </section>
         )}
 
-        <footer className="text-center py-6 border-t border-border">
-          <p className="text-xs text-muted-foreground">CineRadar • AI Movie Intelligence</p>
-        </footer>
+        <AdSlot slot={AD_SLOTS.article} minHeight={250} />
+        <AffiliateBanner index={2} className="mt-4" />
+        <SiteFooter />
       </main>
     </div>
   );

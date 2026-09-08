@@ -18,6 +18,11 @@ import WebSeriesSection from "@/components/WebSeriesSection";
 import { useMovieIntelligence } from "@/hooks/useMovieIntelligence";
 import { useMovieSearch, SearchResult } from "@/hooks/useMovieSearch";
 import { usePerfTracking } from "@/hooks/usePerfTracking";
+import AdSlot from "@/components/AdSlot";
+import AffiliateBanner from "@/components/AffiliateBanner";
+import AdsterraBanner from "@/components/AdsterraBanner";
+import SiteFooter from "@/components/SiteFooter";
+import { AD_SLOTS } from "@/config/ads";
 
 const SearchResultCard = ({ movie, onClick }: { movie: SearchResult; onClick: () => void }) => (
   <div
@@ -297,6 +302,9 @@ const Index = () => {
           category={category}
         />
 
+        <AdSlot slot={AD_SLOTS.headerBanner} minHeight={120} />
+        <AffiliateBanner index={0} />
+
         {/* Search Results Mode */}
         {showSearchResults && (
           <section className="space-y-4">
@@ -446,12 +454,12 @@ const Index = () => {
           </>
         )}
 
-        {/* Footer */}
-        <footer className="text-center py-6 border-t border-border">
-          <p className="text-xs text-muted-foreground">
-            CineRadar • AI Movie Intelligence Engine • {isLive ? "Powered by Lovable AI" : "Data sourced from public records"}
-          </p>
-        </footer>
+        {/* Bottom ads */}
+        <AdSlot slot={AD_SLOTS.footerBanner} minHeight={250} />
+        <AdsterraBanner />
+        <AffiliateBanner index={1} />
+
+        <SiteFooter />
       </main>
     </div>
   );
