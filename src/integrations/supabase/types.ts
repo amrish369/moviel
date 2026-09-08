@@ -71,6 +71,39 @@ export type Database = {
         }
         Relationships: []
       }
+      unlock_tokens: {
+        Row: {
+          chat_id: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          movie_slug: string | null
+          token: string
+          verified: boolean
+          verified_at: string | null
+        }
+        Insert: {
+          chat_id?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          movie_slug?: string | null
+          token: string
+          verified?: boolean
+          verified_at?: string | null
+        }
+        Update: {
+          chat_id?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          movie_slug?: string | null
+          token?: string
+          verified?: boolean
+          verified_at?: string | null
+        }
+        Relationships: []
+      }
       user_likes: {
         Row: {
           created_at: string
