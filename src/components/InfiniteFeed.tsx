@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loader2, Star, Heart, Sparkles, Bookmark } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +9,9 @@ import {
 import { useUserLibrary } from "@/hooks/useUserLibrary";
 import DownloadButton from "./DownloadButton";
 import PlayOnTelegram from "./PlayOnTelegram";
+import AdSlot from "./AdSlot";
+import AffiliateBanner from "./AffiliateBanner";
+import { AD_SLOTS } from "@/config/ads";
 
 interface FeedItem {
   id: number;
