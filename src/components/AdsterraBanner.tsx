@@ -1,10 +1,7 @@
 import { useEffect, useRef } from "react";
 import { ADSTERRA } from "@/config/ads";
 
-/**
- * Adsterra / PropellerAds native banner.
- * Renders nothing until a script URL is configured in src/config/ads.ts.
- */
+/** Adsterra native banner. */
 const AdsterraBanner = ({ className = "" }: { className?: string }) => {
   const ref = useRef<HTMLDivElement>(null);
   const loaded = useRef(false);
@@ -26,8 +23,8 @@ const AdsterraBanner = ({ className = "" }: { className?: string }) => {
       <p className="text-[9px] uppercase tracking-widest text-muted-foreground/60 text-center mb-1">
         Advertisement
       </p>
-      <div ref={ref} />
       {ADSTERRA.bannerContainerId && <div id={ADSTERRA.bannerContainerId} />}
+      <div ref={ref} />
     </div>
   );
 };
