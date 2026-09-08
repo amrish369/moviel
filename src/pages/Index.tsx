@@ -297,6 +297,9 @@ const Index = () => {
           category={category}
         />
 
+        <AdSlot slot={AD_SLOTS.headerBanner} minHeight={120} />
+        <AffiliateBanner index={0} />
+
         {/* Search Results Mode */}
         {showSearchResults && (
           <section className="space-y-4">
