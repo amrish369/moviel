@@ -21,6 +21,7 @@ import { usePerfTracking } from "@/hooks/usePerfTracking";
 import AdSlot from "@/components/AdSlot";
 import AffiliateBanner from "@/components/AffiliateBanner";
 import AdsterraBanner from "@/components/AdsterraBanner";
+import AdsterraIframe from "@/components/AdsterraIframe";
 import SiteFooter from "@/components/SiteFooter";
 import { AD_SLOTS } from "@/config/ads";
 
@@ -303,6 +304,7 @@ const Index = () => {
         />
 
         <AdSlot slot={AD_SLOTS.headerBanner} minHeight={120} />
+        <AdsterraIframe />
         <AffiliateBanner index={0} />
 
         {/* Search Results Mode */}

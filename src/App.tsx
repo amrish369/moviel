@@ -17,6 +17,7 @@ import ArtistDetail from "./pages/ArtistDetail.tsx";
 import { MusicPlayerProvider } from "./contexts/MusicPlayerContext";
 import MiniPlayer from "./components/MiniPlayer";
 import ConsentBanner from "./components/ConsentBanner";
+import AdsterraScripts from "./components/AdsterraScripts";
 import { Privacy, Terms, About, Contact, Disclaimer } from "./pages/Legal.tsx";
 
 const queryClient = new QueryClient();
