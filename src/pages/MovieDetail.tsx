@@ -8,6 +8,10 @@ import { useMovieDetail } from "@/hooks/useMovieDetail";
 import { usePerfTracking } from "@/hooks/usePerfTracking";
 import MoviePoster from "@/components/MoviePoster";
 import DownloadButton from "@/components/DownloadButton";
+import AdSlot from "@/components/AdSlot";
+import AffiliateBanner from "@/components/AffiliateBanner";
+import SiteFooter from "@/components/SiteFooter";
+import { AD_SLOTS } from "@/config/ads";
 import MovieSongsReel from "@/components/MovieSongsReel";
 
 const MovieDetailPage = () => {
