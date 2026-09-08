@@ -413,9 +413,9 @@ const MovieDetailPage = () => {
           </section>
         )}
 
-        <footer className="text-center py-6 border-t border-border">
-          <p className="text-xs text-muted-foreground">CineRadar • AI Movie Intelligence</p>
-        </footer>
+        <AdSlot slot={AD_SLOTS.article} minHeight={250} />
+        <AffiliateBanner index={2} className="mt-4" />
+        <SiteFooter />
       </main>
     </div>
   );
