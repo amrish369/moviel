@@ -1,0 +1,1 @@
+CREATE POLICY "No client access to unlock tokens" ON public.unlock_tokens FOR ALL TO authenticated, anon USING (false) WITH CHECK (false);
