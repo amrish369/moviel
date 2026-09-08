@@ -18,6 +18,7 @@ import { MusicPlayerProvider } from "./contexts/MusicPlayerContext";
 import MiniPlayer from "./components/MiniPlayer";
 import ConsentBanner from "./components/ConsentBanner";
 import AdsterraScripts from "./components/AdsterraScripts";
+import Verify from "./pages/Verify.tsx";
 import { Privacy, Terms, About, Contact, Disclaimer } from "./pages/Legal.tsx";
 
 const queryClient = new QueryClient();
@@ -45,6 +46,7 @@ const App = () => (
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/disclaimer" element={<Disclaimer />} />
+              <Route path="/verify" element={<Verify />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
