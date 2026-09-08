@@ -12,11 +12,29 @@ export const AD_SLOTS = {
   article: "",
 };
 
-// Adsterra / PropellerAds: paste the script src given by the network.
-// Example Adsterra native banner: "//pl123456.profitablecpmgate.com/xxxxxxxx/invoke.js"
+// Adsterra ad codes (live).
 export const ADSTERRA = {
-  bannerScriptSrc: "", // social bar / native banner invoke.js URL
-  bannerContainerId: "", // e.g. "container-xxxxxxxxxxxxxxxx"
+  // Native banner
+  bannerScriptSrc:
+    "https://pl31250447.profitableratecpmnetwork.com/a534aac8aba39c4256285a3535dccd04/invoke.js",
+  bannerContainerId: "container-a534aac8aba39c4256285a3535dccd04",
+  // Social bar
+  socialBarSrc:
+    "https://pl31250448.profitableratecpmnetwork.com/3d/60/c8/3d60c8802581afc942d0afd737c52f91.js",
+  // Popunder
+  popunderSrc:
+    "https://pl31250445.profitableratecpmnetwork.com/55/fd/c0/55fdc0be1a580a7e4b5dfe2bbf173a28.js",
+  // Fixed-size iframe banner (160x300)
+  iframe: {
+    key: "a194b20cc11a59b2ab9d8082318e2209",
+    width: 160,
+    height: 300,
+    invokeSrc:
+      "https://www.highrevenueformat.com/a194b20cc11a59b2ab9d8082318e2209/invoke.js",
+  },
+  // Direct link (used as an affiliate-style offer)
+  directLink:
+    "https://www.profitableratecpmnetwork.com/kv0ir4e3p8?key=44563c406b1eff63688d9294d80b762d",
 };
 
 // Affiliate banners shown between content. Add/remove freely.
