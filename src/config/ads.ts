@@ -72,6 +72,14 @@ export const AFFILIATE_OFFERS: AffiliateOffer[] = [
     url: "https://t.me/Cinedbot",
     emoji: "📲",
   },
+  {
+    id: "adsterra-direct",
+    title: "Sponsored offer",
+    subtitle: "Exclusive deals from our advertising partner",
+    cta: "View offer",
+    url: ADSTERRA.directLink,
+    emoji: "✨",
+  },
 ];
 
 export const CONTACT_EMAIL = "Yadavamarish11@gmail.com";
