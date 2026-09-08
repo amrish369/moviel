@@ -18,6 +18,11 @@ import WebSeriesSection from "@/components/WebSeriesSection";
 import { useMovieIntelligence } from "@/hooks/useMovieIntelligence";
 import { useMovieSearch, SearchResult } from "@/hooks/useMovieSearch";
 import { usePerfTracking } from "@/hooks/usePerfTracking";
+import AdSlot from "@/components/AdSlot";
+import AffiliateBanner from "@/components/AffiliateBanner";
+import AdsterraBanner from "@/components/AdsterraBanner";
+import SiteFooter from "@/components/SiteFooter";
+import { AD_SLOTS } from "@/config/ads";
 
 const SearchResultCard = ({ movie, onClick }: { movie: SearchResult; onClick: () => void }) => (
   <div
