@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   CheckCircle2,
@@ -59,14 +59,11 @@ const Verify = () => {
     url: `${SITE_URL}/verify`,
   });
 
-  // countdown
-  useState(() => undefined);
-  if (typeof window !== "undefined") {
-    // no-op placeholder to keep hook order stable
-  }
-
-  // timer effect
-  useTimer(opened, left, setLeft);
+  useEffect(() => {
+    if (!opened || left <= 0) return;
+    const id = window.setInterval(() => setLeft((s) => (s > 0 ? s - 1 : 0)), 1000);
+    return () => window.clearInterval(id);
+  }, [opened, left]);
 
   const openOffer = () => {
     setOpened(true);
