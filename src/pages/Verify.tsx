@@ -394,14 +394,14 @@ const Verify = () => {
       <div className="glass-card rounded-xl p-4 border border-primary/40 space-y-2">
         <p className="text-sm font-bold text-foreground">
           {!opened
-            ? "Open the sponsor page above to activate this button."
+            ? "👆 Open the sponsor page above to activate this button."
             : left > 0
-              ? `Please wait ${left}s…`
+              ? `⏳ Please wait ${left}s…`
               : !scrolled
-                ? "Scroll to the very bottom to unlock the button."
+                ? "👇 Scroll to the very bottom to unlock the button."
                 : step < 3
-                  ? "All set — continue to the next step."
-                  : "All set — finish your verification."}
+                  ? "✅ All set — continue to the next step."
+                  : "✅ All set — finish your verification."}
         </p>
         <button
           onClick={() => (step < 3 ? goStep(step + 1) : finish())}
