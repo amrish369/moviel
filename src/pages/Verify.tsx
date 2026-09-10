@@ -96,13 +96,31 @@ const Guide = ({ lines }: { lines: string[] }) => (
     <p className="text-[11px] uppercase tracking-widest text-primary mb-2">
       How to complete this step
     </p>
-    <ol className="space-y-1.5 text-sm text-foreground list-decimal pl-4">
+    <ol className="space-y-2 text-sm text-foreground list-decimal pl-4">
       {lines.map((l) => (
-        <li key={l} className="font-bold">
-          {l}
+        <li key={l} className="font-bold leading-snug">
+          👉 {l}
         </li>
       ))}
     </ol>
+  </div>
+);
+
+const Timer = ({ seconds, active }: { seconds: number; active: boolean }) => (
+  <div className="glass-card rounded-2xl p-5 border border-primary/40 text-center space-y-1">
+    <p className="text-[11px] uppercase tracking-widest text-primary">
+      ⏳ Please wait
+    </p>
+    <p
+      className={`font-display text-5xl font-extrabold ${
+        active ? "text-primary" : "text-green-500"
+      }`}
+    >
+      {seconds}s
+    </p>
+    <p className="text-xs text-muted-foreground font-semibold">
+      {active ? "Hold on while we verify your visit 👇" : "Done — scroll down and continue 👇"}
+    </p>
   </div>
 );
 
@@ -307,14 +325,16 @@ const Verify = () => {
 
       <Guide lines={stepCopy.guide} />
 
+      <Timer seconds={left} active={left > 0} />
+
       <button
         onClick={openSponsor}
         className="w-full flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground text-sm font-bold py-3"
       >
         {stepCopy.button} <ExternalLink className="w-4 h-4" />
       </button>
-      <p className="text-[11px] text-muted-foreground text-center">
-        Opens in a new tab. Come back here after it loads.
+      <p className="text-[11px] text-muted-foreground text-center font-semibold">
+        👆 Tap above. Opens in a new tab. Come back here after it loads.
       </p>
 
       <AdsterraIframe />
@@ -374,14 +394,14 @@ const Verify = () => {
       <div className="glass-card rounded-xl p-4 border border-primary/40 space-y-2">
         <p className="text-sm font-bold text-foreground">
           {!opened
-            ? "Open the sponsor page above to activate this button."
+            ? "👆 Open the sponsor page above to activate this button."
             : left > 0
-              ? `Please wait ${left}s…`
+              ? `⏳ Please wait ${left}s…`
               : !scrolled
-                ? "Scroll to the very bottom to unlock the button."
+                ? "👇 Scroll to the very bottom to unlock the button."
                 : step < 3
-                  ? "All set — continue to the next step."
-                  : "All set — finish your verification."}
+                  ? "✅ All set — continue to the next step."
+                  : "✅ All set — finish your verification."}
         </p>
         <button
           onClick={() => (step < 3 ? goStep(step + 1) : finish())}
