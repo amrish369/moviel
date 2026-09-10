@@ -325,6 +325,8 @@ const Verify = () => {
 
       <Guide lines={stepCopy.guide} />
 
+      <Timer seconds={left} active={opened && left > 0} />
+
       <button
         onClick={openSponsor}
         className="w-full flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground text-sm font-bold py-3"
