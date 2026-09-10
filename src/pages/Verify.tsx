@@ -96,13 +96,31 @@ const Guide = ({ lines }: { lines: string[] }) => (
     <p className="text-[11px] uppercase tracking-widest text-primary mb-2">
       How to complete this step
     </p>
-    <ol className="space-y-1.5 text-sm text-foreground list-decimal pl-4">
+    <ol className="space-y-2 text-sm text-foreground list-decimal pl-4">
       {lines.map((l) => (
-        <li key={l} className="font-bold">
-          {l}
+        <li key={l} className="font-bold leading-snug">
+          👉 {l}
         </li>
       ))}
     </ol>
+  </div>
+);
+
+const Timer = ({ seconds, active }: { seconds: number; active: boolean }) => (
+  <div className="glass-card rounded-2xl p-5 border border-primary/40 text-center space-y-1">
+    <p className="text-[11px] uppercase tracking-widest text-primary">
+      ⏳ Please wait
+    </p>
+    <p
+      className={`font-display text-5xl font-extrabold ${
+        active ? "text-primary" : "text-green-500"
+      }`}
+    >
+      {seconds}s
+    </p>
+    <p className="text-xs text-muted-foreground font-semibold">
+      {active ? "Hold on while we verify your visit 👇" : "Done — scroll down and continue 👇"}
+    </p>
   </div>
 );
 
