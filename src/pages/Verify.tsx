@@ -325,7 +325,7 @@ const Verify = () => {
 
       <Guide lines={stepCopy.guide} />
 
-      <Timer seconds={left} active={opened && left > 0} />
+      <Timer seconds={left} active={left > 0} />
 
       <button
         onClick={openSponsor}
@@ -333,8 +333,8 @@ const Verify = () => {
       >
         {stepCopy.button} <ExternalLink className="w-4 h-4" />
       </button>
-      <p className="text-[11px] text-muted-foreground text-center">
-        Opens in a new tab. Come back here after it loads.
+      <p className="text-[11px] text-muted-foreground text-center font-semibold">
+        👆 Tap above. Opens in a new tab. Come back here after it loads.
       </p>
 
       <AdsterraIframe />
