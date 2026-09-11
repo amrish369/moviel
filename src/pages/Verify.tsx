@@ -165,7 +165,13 @@ const Verify = () => {
 
   const openSponsor = () => {
     setOpened(true);
-    window.open(ADSTERRA.directLink, "_blank", "noopener");
+    // Reuse one sponsor tab across all three steps. On mobile this prevents
+    // visitors from building up several redirects and pressing Back repeatedly.
+    const sponsorWindow = window.open(
+      ADSTERRA.directLink,
+      "cineradar-sponsor",
+    );
+    if (sponsorWindow) sponsorWindow.opener = null;
   };
 
   const shareLink = async () => {
@@ -205,7 +211,7 @@ const Verify = () => {
   const stepCopy = [
     {
       guide: [
-        "Tap the blue button below to open the sponsor page in a new tab.",
+        "Tap the blue button below to open the sponsor page once.",
         "Let it load, then come back to this tab.",
         "Wait for the 10 second timer to finish.",
         "Scroll to the bottom and tap Verify & continue.",
@@ -214,8 +220,8 @@ const Verify = () => {
     },
     {
       guide: [
-        "Tap the blue button to open the second sponsor page.",
-        "Return to this tab after it opens.",
+        "Tap the blue button to reopen the same sponsor tab.",
+        "Return to CineRadar after it opens.",
         "Wait 10 seconds again — this keeps the bot free.",
         "Scroll down and tap Verify & continue.",
       ],
@@ -223,7 +229,7 @@ const Verify = () => {
     },
     {
       guide: [
-        "Tap the blue button one last time.",
+        "Tap the blue button to reuse the same sponsor tab one last time.",
         "Wait 10 seconds and scroll to the bottom.",
         "Tap Finish verification to unlock your file.",
         "Then go back to @Cinedbot and tap Get File.",
@@ -334,7 +340,7 @@ const Verify = () => {
         {stepCopy.button} <ExternalLink className="w-4 h-4" />
       </button>
       <p className="text-[11px] text-muted-foreground text-center font-semibold">
-        👆 Tap above. Opens in a new tab. Come back here after it loads.
+        👆 Tap above. The same sponsor tab is reused at every step, so you only return once.
       </p>
 
       <AdsterraIframe />
