@@ -9,6 +9,7 @@ import {
 import { useUserLibrary } from "@/hooks/useUserLibrary";
 import DownloadButton from "./DownloadButton";
 import PlayOnTelegram from "./PlayOnTelegram";
+import PlayFullMovie from "./PlayFullMovie";
 import AdSlot from "./AdSlot";
 import AffiliateBanner from "./AffiliateBanner";
 import { AD_SLOTS } from "@/config/ads";
@@ -104,6 +105,7 @@ const FeedCard = ({ item, liked, saved, onLike, onSave }: {
           </button>
           <DownloadButton movieTitle={item.title} />
           <PlayOnTelegram title={item.title} year={item.year} />
+          <PlayFullMovie title={item.title} year={item.year} language={item.language} />
           <span className="ml-auto text-[10px] uppercase tracking-wide text-muted-foreground">
             {item.popularity > 100 ? "Trending" : "For You"}
           </span>
