@@ -8,6 +8,7 @@ import { useMovieDetail } from "@/hooks/useMovieDetail";
 import { usePerfTracking } from "@/hooks/usePerfTracking";
 import MoviePoster from "@/components/MoviePoster";
 import DownloadButton from "@/components/DownloadButton";
+import PlayFullMovie from "@/components/PlayFullMovie";
 import AdSlot from "@/components/AdSlot";
 import AffiliateBanner from "@/components/AffiliateBanner";
 import SiteFooter from "@/components/SiteFooter";
@@ -199,6 +200,9 @@ const MovieDetailPage = () => {
             )
           )}
           <DownloadButton movieTitle={movie?.title} variant="full" label="Download from Telegram" />
+          {movie?.title && (
+            <PlayFullMovie title={movie.title} year={movie.year} language={movie.language} />
+          )}
         </div>
 
         {trailerOpen && youtubeKey && (
