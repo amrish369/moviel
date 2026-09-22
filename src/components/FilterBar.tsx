@@ -33,15 +33,15 @@ const FilterBar = ({ onSearch, onMoodChange, onCategoryChange, mood, category }:
 
   return (
     <div className="space-y-4">
-      <form onSubmit={handleSearch} className="flex gap-2">
-        <div className="flex-1 relative">
+      <form onSubmit={handleSearch} className="flex gap-2 min-w-0">
+        <div className="flex-1 min-w-0 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search movie, series, or keyword..."
-            className="w-full pl-10 pr-9 py-3 rounded-lg bg-secondary border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 font-body text-sm"
+            className="w-full min-w-0 pl-10 pr-9 py-3 text-base sm:text-sm rounded-lg bg-secondary border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 font-body"
           />
           {query && (
             <button
@@ -57,7 +57,8 @@ const FilterBar = ({ onSearch, onMoodChange, onCategoryChange, mood, category }:
         <button
           type="button"
           onClick={() => setShowFilters(!showFilters)}
-          className="p-3 rounded-lg bg-secondary border border-border hover:border-primary/50 transition-colors"
+          aria-label="Show filters"
+          className="w-11 h-11 shrink-0 flex items-center justify-center rounded-lg bg-secondary border border-border hover:border-primary/50 transition-colors"
         >
           <SlidersHorizontal className="w-4 h-4 text-muted-foreground" />
         </button>

@@ -182,8 +182,8 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border sticky top-0 z-50 bg-background/80 backdrop-blur-xl">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <div className="max-w-4xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
             <Sheet>
               <SheetTrigger asChild>
                 <button
@@ -234,13 +234,13 @@ const Index = () => {
             <div className="w-9 h-9 rounded-lg bg-primary/15 flex items-center justify-center glow-gold">
               <Clapperboard className="w-5 h-5 text-primary" />
             </div>
-            <div>
-              <h1 className="font-display text-lg font-bold text-gradient-gold leading-tight">CineRadar</h1>
-              <p className="text-[10px] text-muted-foreground">AI Movie Intelligence</p>
+            <div className="min-w-0">
+              <h1 className="font-display text-base sm:text-lg font-bold text-gradient-gold leading-tight truncate">CineRadar</h1>
+              <p className="hidden min-[360px]:block text-[10px] text-muted-foreground truncate">AI Movie Intelligence</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+            <div className="hidden sm:flex items-center gap-1.5">
               {isLive ? (
                 <Wifi className="w-3 h-3 text-cinema-green" />
               ) : (
@@ -250,13 +250,13 @@ const Index = () => {
                 {isLive ? "LIVE" : "OFFLINE"}
               </span>
             </div>
-            <Link to="/watchlist" aria-label="Watchlist" className="w-8 h-8 rounded-lg bg-secondary/60 hover:bg-secondary flex items-center justify-center">
+            <Link to="/watchlist" aria-label="Watchlist" className="w-8 h-8 shrink-0 rounded-lg bg-secondary/60 hover:bg-secondary flex items-center justify-center">
               <Bookmark className="w-4 h-4 text-primary" />
             </Link>
-            <Link to="/music" aria-label="Music" className="w-8 h-8 rounded-lg bg-secondary/60 hover:bg-secondary flex items-center justify-center">
+            <Link to="/music" aria-label="Music" className="w-8 h-8 shrink-0 rounded-lg bg-secondary/60 hover:bg-secondary flex items-center justify-center">
               <MusicIcon className="w-4 h-4 text-primary" />
             </Link>
-            <Link to="/study" aria-label="Study Hub" className="w-8 h-8 rounded-lg bg-secondary/60 hover:bg-secondary flex items-center justify-center">
+            <Link to="/study" aria-label="Study Hub" className="hidden min-[400px]:flex w-8 h-8 shrink-0 rounded-lg bg-secondary/60 hover:bg-secondary items-center justify-center">
               <GraduationCap className="w-4 h-4 text-primary" />
             </Link>
             {user ? (
@@ -294,7 +294,7 @@ const Index = () => {
       )}
 
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 py-6 space-y-10">
+      <main className="w-full max-w-4xl mx-auto px-3 sm:px-4 py-5 sm:py-6 space-y-8 sm:space-y-10 overflow-x-hidden">
         <FilterBar
           onSearch={handleSearch}
           onMoodChange={handleMoodChange}
