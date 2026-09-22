@@ -46,6 +46,8 @@ const PlayFullMovie = ({
   const [results, setResults] = useState<FullResult[]>([]);
   const [active, setActive] = useState<FullResult | null>(null);
   const [searched, setSearched] = useState(false);
+  const [linkInput, setLinkInput] = useState("");
+  const [linkError, setLinkError] = useState("");
 
   const cacheKey = `${title}|${year ?? ""}`;
 
