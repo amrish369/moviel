@@ -1,6 +1,23 @@
 import { useState } from "react";
-import { Loader2, PlayCircle, X } from "lucide-react";
+import { Loader2, PlayCircle, X, Link2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import VideoPlayer from "./VideoPlayer";
+
+export const extractYouTubeId = (input: string): string | null => {
+  const raw = input.trim();
+  if (!raw) return null;
+  if (/^[\w-]{11}$/.test(raw)) return raw;
+  const patterns = [
+    /(?:youtube\.com\/watch\?[^#]*\bv=)([\w-]{11})/,
+    /(?:youtu\.be\/)([\w-]{11})/,
+    /(?:youtube\.com\/(?:embed|v|shorts|live)\/)([\w-]{11})/,
+  ];
+  for (const p of patterns) {
+    const m = raw.match(p);
+    if (m) return m[1];
+  }
+  return null;
+};
 
 interface FullResult {
   videoId: string;
@@ -29,6 +46,8 @@ const PlayFullMovie = ({
   const [results, setResults] = useState<FullResult[]>([]);
   const [active, setActive] = useState<FullResult | null>(null);
   const [searched, setSearched] = useState(false);
+  const [linkInput, setLinkInput] = useState("");
+  const [linkError, setLinkError] = useState("");
 
   const cacheKey = `${title}|${year ?? ""}`;
 
@@ -98,23 +117,61 @@ const PlayFullMovie = ({
 
             {!loading && active && (
               <div className="w-full max-w-3xl mx-auto space-y-3">
-                <div className="aspect-video rounded-xl overflow-hidden bg-black shadow-2xl">
-                  <iframe
-                    key={active.videoId}
-                    src={`https://www.youtube.com/embed/${active.videoId}?autoplay=1&rel=0&modestbranding=1&playsinline=1&iv_load_policy=3`}
-                    title={active.title}
-                    allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-                    allowFullScreen
-                    className="w-full h-full border-0"
-                  />
-                </div>
+                <VideoPlayer videoId={active.videoId} title={active.title} />
                 <div>
                   <p className="text-sm font-semibold text-foreground line-clamp-2">{active.title}</p>
                   <p className="text-[11px] text-muted-foreground">
                     {active.channel}{active.duration ? ` • ${active.duration}` : ""}{active.views ? ` • ${active.views}` : ""}
                   </p>
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Full-screen ke liye player ke neeche-right wale button par tap karein.
+                  </p>
                 </div>
               </div>
+            )}
+
+            {!loading && (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const id = extractYouTubeId(linkInput);
+                  if (!id) {
+                    setLinkError("Ye valid YouTube link nahi lag raha.");
+                    return;
+                  }
+                  setLinkError("");
+                  setActive({
+                    videoId: id,
+                    title: `${title}${year ? ` (${year})` : ""} — custom link`,
+                    channel: "YouTube",
+                    thumbnail: "",
+                    duration: "",
+                    views: "",
+                  });
+                }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-3xl mx-auto space-y-1.5"
+              >
+                <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1">
+                  <Link2 className="w-3 h-3" /> YouTube link se play karein
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    value={linkInput}
+                    onChange={(e) => setLinkInput(e.target.value)}
+                    placeholder="https://youtube.com/watch?v=..."
+                    className="min-w-0 flex-1 text-xs px-3 py-2 rounded-lg bg-secondary/60 border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                  <button
+                    type="submit"
+                    className="text-xs font-semibold px-3 py-2 rounded-lg bg-primary text-primary-foreground shrink-0"
+                  >
+                    Play
+                  </button>
+                </div>
+                {linkError && <p className="text-[11px] text-destructive">{linkError}</p>}
+              </form>
             )}
 
             {!loading && results.length > 1 && (
