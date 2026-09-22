@@ -50,10 +50,7 @@ const VideoPlayer = ({ videoId, title = "Video player", startSeconds = 0, classN
 
   const toggleFullscreen = useCallback(async () => {
     const el = shellRef.current as
-      | (HTMLDivElement & {
-          webkitRequestFullscreen?: () => Promise<void>;
-Add: undefined;
-        })
+      | (HTMLDivElement & { webkitRequestFullscreen?: () => Promise<void> })
       | null;
     if (!el) return;
 
