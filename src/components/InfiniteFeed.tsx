@@ -211,7 +211,7 @@ const InfiniteFeed = ({ mood, category }: { mood?: string; category?: string }) 
         <span className="text-[10px] text-muted-foreground ml-1">Personalized • Refreshed daily</span>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 grid-cols-[minmax(0,1fr)] sm:grid-cols-2 lg:grid-cols-3">
         {items.map((it, i) => (
           <Fragment key={it.id}>
             <FeedCard
