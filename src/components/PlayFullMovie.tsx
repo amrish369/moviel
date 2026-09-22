@@ -1,6 +1,23 @@
 import { useState } from "react";
-import { Loader2, PlayCircle, X } from "lucide-react";
+import { Loader2, PlayCircle, X, Link2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import VideoPlayer from "./VideoPlayer";
+
+export const extractYouTubeId = (input: string): string | null => {
+  const raw = input.trim();
+  if (!raw) return null;
+  if (/^[\w-]{11}$/.test(raw)) return raw;
+  const patterns = [
+    /(?:youtube\.com\/watch\?[^#]*\bv=)([\w-]{11})/,
+    /(?:youtu\.be\/)([\w-]{11})/,
+    /(?:youtube\.com\/(?:embed|v|shorts|live)\/)([\w-]{11})/,
+  ];
+  for (const p of patterns) {
+    const m = raw.match(p);
+    if (m) return m[1];
+  }
+  return null;
+};
 
 interface FullResult {
   videoId: string;
