@@ -30,7 +30,9 @@ const AdsterraScripts = () => {
   useEffect(() => {
     if (alreadyShownToday()) return;
 
-    const srcs = [ADSTERRA.socialBarSrc, ADSTERRA.popunderSrc].filter(Boolean);
+    // Popunder intentionally disabled — it opens a popup on every click and
+    // ruins the mobile experience. Only the social bar loads, once per day.
+    const srcs = [ADSTERRA.socialBarSrc].filter(Boolean);
     if (srcs.length === 0) return;
 
     const added: HTMLScriptElement[] = [];
