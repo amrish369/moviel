@@ -27,7 +27,7 @@ const AdsterraIframe = ({ className = "" }: { className?: string }) => {
         height={height}
         scrolling="no"
         style={{ border: 0, width, height }}
-        sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox allow-same-origin"
+        sandbox="allow-scripts allow-same-origin"
       />
     </div>
   );
