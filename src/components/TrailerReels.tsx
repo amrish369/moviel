@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Loader2, Play, Volume2, VolumeX, Star, Bookmark, Heart, Info, RefreshCw } from "lucide-react";
+import { Loader2, Play, Volume2, VolumeX, Star, Bookmark, Heart, Info, RefreshCw, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useUserLibrary } from "@/hooks/useUserLibrary";
@@ -31,8 +31,8 @@ const ReelCard = ({ trailer, active, muted, onToggleMute }: {
     : "";
 
   return (
-    <div className="relative h-[100svh] w-full snap-start snap-always bg-black overflow-hidden flex items-center justify-center">
-      {/* Backdrop blur fallback */}
+    <div className="relative h-[100dvh] w-full snap-start snap-always bg-black overflow-hidden flex items-center justify-center">
+      {/* Backdrop blur fill */}
       {trailer.backdrop && (
         <img
           src={trailer.backdrop}
@@ -41,15 +41,15 @@ const ReelCard = ({ trailer, active, muted, onToggleMute }: {
         />
       )}
 
-      {/* Video */}
+      {/* Video (16:9 letterboxed, centered) */}
       {active ? (
         <iframe
           key={trailer.youtubeKey + (muted ? "m" : "u")}
           src={src}
           title={trailer.title}
           allow="autoplay; encrypted-media; picture-in-picture"
-          className="absolute inset-0 w-full h-full pointer-events-none"
-          style={{ aspectRatio: "16/9" }}
+          sandbox="allow-scripts allow-same-origin allow-presentation"
+          className="relative w-full max-h-full aspect-video pointer-events-none"
         />
       ) : (
         trailer.poster && (
@@ -140,6 +140,7 @@ const TrailerReels = ({ mood, category }: { mood?: string; category?: string }) 
   const [loading, setLoading] = useState(false);
   const [activeIdx, setActiveIdx] = useState(0);
   const [muted, setMuted] = useState(true);
+  const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -200,46 +201,85 @@ const TrailerReels = ({ mood, category }: { mood?: string; category?: string }) 
     return () => obs.disconnect();
   }, [trailers, loadMore]);
 
-  return (
-    <div
-      ref={containerRef}
-      className="h-[100svh] w-full overflow-y-scroll snap-y snap-mandatory bg-black -mx-4"
-      style={{ scrollSnapStop: "always", scrollbarWidth: "none" }}
-    >
-      {/* Refresh button */}
+  // Lock page scroll while full-screen reels are open
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => { document.body.style.overflow = prev; window.removeEventListener("keydown", onKey); };
+  }, [open]);
+
+  const cover = trailers[0];
+
+  if (!open) {
+    return (
       <button
-        onClick={() => loadMore({ refresh: true })}
-        disabled={loading}
-        aria-label="Refresh trailers"
-        className="fixed top-20 right-3 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-white text-xs font-semibold hover:bg-black/80 disabled:opacity-50"
+        onClick={() => { setActiveIdx(0); setOpen(true); }}
+        className="relative w-full aspect-[9/12] sm:aspect-video rounded-2xl overflow-hidden bg-card border border-border text-left group"
+        aria-label="Open Trailer Reels"
       >
-        <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-        Refresh
+        {cover?.backdrop || cover?.poster ? (
+          <img src={cover.backdrop || cover.poster!} alt="" className="absolute inset-0 w-full h-full object-cover opacity-70 group-hover:scale-105 transition-transform" />
+        ) : null}
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="w-16 h-16 rounded-full bg-primary flex items-center justify-center shadow-lg">
+            {loading && !cover ? <Loader2 className="w-7 h-7 animate-spin text-primary-foreground" /> : <Play className="w-7 h-7 text-primary-foreground fill-primary-foreground ml-1" />}
+          </span>
+        </div>
+        <div className="absolute bottom-0 left-0 right-0 p-4">
+          <p className="text-[10px] font-bold text-primary uppercase tracking-wider">🎬 Trailer Reels</p>
+          <h3 className="font-display text-lg font-bold text-foreground">Tap to watch full-screen</h3>
+          <p className="text-xs text-muted-foreground">Swipe up for next trailer 👆</p>
+        </div>
       </button>
-      {trailers.map((t, i) => (
-        <div
-          key={t.id}
-          data-idx={i}
-          ref={(el) => (itemRefs.current[i] = el)}
-        >
-          <ReelCard
-            trailer={t}
-            active={i === activeIdx}
-            muted={muted}
-            onToggleMute={() => setMuted(m => !m)}
-          />
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-[100] bg-black">
+      <div
+        ref={containerRef}
+        className="h-full w-full overflow-y-scroll overscroll-contain snap-y snap-mandatory"
+        style={{ scrollbarWidth: "none" }}
+      >
+        {trailers.map((t, i) => (
+          <div key={t.id} data-idx={i} ref={(el) => (itemRefs.current[i] = el)}>
+            <ReelCard trailer={t} active={i === activeIdx} muted={muted} onToggleMute={() => setMuted(m => !m)} />
+          </div>
+        ))}
+        {loading && (
+          <div className="h-32 flex items-center justify-center text-white/70">
+            <Loader2 className="w-6 h-6 animate-spin mr-2" /> Loading trailers...
+          </div>
+        )}
+        {!loading && trailers.length === 0 && (
+          <div className="h-full flex items-center justify-center text-white/70 text-sm px-6 text-center">
+            No trailers available right now.
+          </div>
+        )}
+      </div>
+
+      {/* Top bar */}
+      <div className="absolute top-0 left-0 right-0 z-30 flex items-center justify-between p-3 pt-[max(0.75rem,env(safe-area-inset-top))] bg-gradient-to-b from-black/70 to-transparent pointer-events-none">
+        <button onClick={() => setOpen(false)} aria-label="Close reels"
+          className="pointer-events-auto w-10 h-10 rounded-full bg-black/50 border border-white/20 backdrop-blur-md flex items-center justify-center text-white">
+          <X className="w-5 h-5" />
+        </button>
+        <span className="font-display text-sm font-bold text-white">Trailer Reels</span>
+        <div className="flex gap-2 pointer-events-auto">
+          <button onClick={() => setMuted(m => !m)} aria-label={muted ? "Unmute" : "Mute"}
+            className="w-10 h-10 rounded-full bg-black/50 border border-white/20 backdrop-blur-md flex items-center justify-center text-white">
+            {muted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+          </button>
+          <button onClick={() => loadMore({ refresh: true })} disabled={loading} aria-label="Refresh trailers"
+            className="w-10 h-10 rounded-full bg-black/50 border border-white/20 backdrop-blur-md flex items-center justify-center text-white disabled:opacity-50">
+            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+          </button>
         </div>
-      ))}
-      {loading && (
-        <div className="h-32 flex items-center justify-center text-white/70">
-          <Loader2 className="w-6 h-6 animate-spin mr-2" /> Loading trailers...
-        </div>
-      )}
-      {!loading && trailers.length === 0 && (
-        <div className="h-[100svh] flex items-center justify-center text-white/70 text-sm px-6 text-center">
-          No trailers available right now. Pull back later.
-        </div>
-      )}
+      </div>
     </div>
   );
 };
