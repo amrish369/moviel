@@ -26,7 +26,7 @@ const ConsentBanner = () => {
   if (!show) return null;
 
   return (
-    <div className="fixed bottom-0 inset-x-0 z-[60] p-3">
+    <div className="fixed bottom-0 inset-x-0 z-[85] p-3">
       <div className="max-w-3xl mx-auto glass-card rounded-xl border border-border p-4 flex flex-col sm:flex-row sm:items-center gap-3">
         <p className="text-xs text-muted-foreground flex-1">
           We use cookies for site features and to show ads from Google and partners.{" "}
