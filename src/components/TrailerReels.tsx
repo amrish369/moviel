@@ -17,17 +17,42 @@ type Trailer = {
   videoName: string;
 };
 
-const ReelCard = ({ trailer, active, muted, onToggleMute }: {
-  trailer: Trailer; active: boolean; muted: boolean; onToggleMute: () => void;
+const ReelCard = ({ trailer, active, preloading, muted, onToggleMute }: {
+  trailer: Trailer; active: boolean; preloading: boolean; muted: boolean; onToggleMute: () => void;
 }) => {
   const navigate = useNavigate();
   const { likes, watchlist, toggleLike, toggleWatchlist } = useUserLibrary();
   const liked = likes.includes(trailer.id);
   const saved = watchlist.includes(trailer.id);
   const item = { id: trailer.id, title: trailer.title, poster: trailer.poster, year: trailer.year };
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  const src = active
-    ? `https://www.youtube.com/embed/${trailer.youtubeKey}?autoplay=1&mute=${muted ? 1 : 0}&controls=0&modestbranding=1&rel=0&playsinline=1&loop=1&playlist=${trailer.youtubeKey}`
+  const showVideo = active || preloading;
+
+  const sendCmd = (func: string, args: string[] = []) => {
+    iframeRef.current?.contentWindow?.postMessage(
+      JSON.stringify({ event: "command", func, args }),
+      "*"
+    );
+  };
+
+  // Apply the current mute state to the running player (no remount = no restart)
+  useEffect(() => {
+    if (!active || !iframeRef.current) return;
+    sendCmd(muted ? "mute" : "unMute");
+    if (!muted) sendCmd("playVideo");
+  }, [muted, active]);
+
+  // After the iframe loads: guarantee playback starts, and unmute if the user had sound on
+  const handleIframeLoad = () => {
+    if (!active) return;
+    sendCmd("playVideo");
+    if (!muted) sendCmd("unMute");
+  };
+
+  // Always start muted in the URL (browser autoplay policy), then unmute via API
+  const src = showVideo
+    ? `https://www.youtube.com/embed/${trailer.youtubeKey}?autoplay=${active ? 1 : 0}&mute=1&controls=0&modestbranding=1&rel=0&playsinline=1&loop=1&playlist=${trailer.youtubeKey}&enablejsapi=1&origin=${window.location.origin}`
     : "";
 
   return (
@@ -41,12 +66,14 @@ const ReelCard = ({ trailer, active, muted, onToggleMute }: {
         />
       )}
 
-      {/* Video (16:9 letterboxed, centered) */}
-      {active ? (
+      {/* Video (16:9 letterboxed, centered). Next reel is pre-mounted so swipe-in is instant */}
+      {showVideo ? (
         <iframe
-          key={trailer.youtubeKey + (muted ? "m" : "u")}
+          ref={iframeRef}
+          key={trailer.youtubeKey}
           src={src}
           title={trailer.title}
+          onLoad={handleIframeLoad}
           allow="autoplay; encrypted-media; picture-in-picture"
           sandbox="allow-scripts allow-same-origin allow-presentation"
           className="relative w-full max-h-full aspect-video pointer-events-none"
@@ -247,7 +274,13 @@ const TrailerReels = ({ mood, category }: { mood?: string; category?: string }) 
       >
         {trailers.map((t, i) => (
           <div key={t.id} data-idx={i} ref={(el) => (itemRefs.current[i] = el)}>
-            <ReelCard trailer={t} active={i === activeIdx} muted={muted} onToggleMute={() => setMuted(m => !m)} />
+            <ReelCard
+              trailer={t}
+              active={i === activeIdx}
+              preloading={i === activeIdx + 1}
+              muted={muted}
+              onToggleMute={() => setMuted(m => !m)}
+            />
           </div>
         ))}
         {loading && (
