@@ -18,6 +18,7 @@ import { MusicPlayerProvider } from "./contexts/MusicPlayerContext";
 import MiniPlayer from "./components/MiniPlayer";
 import ConsentBanner from "./components/ConsentBanner";
 import AdsterraScripts from "./components/AdsterraScripts";
+import BottomNav from "./components/BottomNav";
 import Verify from "./pages/Verify.tsx";
 import { Privacy, Terms, About, Contact, Disclaimer } from "./pages/Legal.tsx";
 
