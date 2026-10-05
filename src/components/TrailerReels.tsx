@@ -208,9 +208,9 @@ const TrailerReels = ({ mood, category }: { mood?: string; category?: string }) 
     if (!loading && trailers.length === 0) loadMore();
   }, [loading, trailers.length, loadMore]);
 
-  // IntersectionObserver to track active reel
+  // IntersectionObserver to track active reel — re-attach whenever reels open or list changes
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!open || !containerRef.current) return;
     const obs = new IntersectionObserver(
       (entries) => {
         entries.forEach((e) => {
@@ -226,7 +226,7 @@ const TrailerReels = ({ mood, category }: { mood?: string; category?: string }) 
     );
     itemRefs.current.forEach((el) => el && obs.observe(el));
     return () => obs.disconnect();
-  }, [trailers, loadMore]);
+  }, [open, trailers, loadMore]);
 
   // Lock page scroll while full-screen reels are open
   useEffect(() => {
