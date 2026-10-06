@@ -282,8 +282,10 @@ const Music = () => {
 
         {tab === "songs" && (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            {songs.map((s) => {
+            {songs.map((s, i) => {
               const active = current?.videoId === s.videoId;
+              const rankNo = i + 1;
+              const showRank = !submittedQuery;
               return (
                 <div key={s.videoId} className="text-left group">
                   <button onClick={() => play(s, songs)} className="w-full text-left" aria-label={`Play ${s.title}`}>
@@ -295,6 +297,11 @@ const Music = () => {
                           <Play className="w-4 h-4 text-primary-foreground fill-primary-foreground ml-0.5" />
                         </div>
                       </div>
+                      {showRank && (
+                        <span className={`absolute top-1 left-1 min-w-[28px] h-6 px-1.5 rounded-md flex items-center justify-center font-display text-xs font-bold ${rankBadgeClass(rankNo)}`}>
+                          {rankNo === 1 ? "👑 #1" : rankNo === 2 ? "🥈 #2" : rankNo === 3 ? "🥉 #3" : `#${rankNo}`}
+                        </span>
+                      )}
                       {s.duration && (
                         <span className="absolute bottom-1 right-1 text-[10px] font-medium text-white bg-black/70 px-1.5 py-0.5 rounded">
                           {s.duration}
