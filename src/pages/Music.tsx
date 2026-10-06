@@ -14,6 +14,19 @@ const CATEGORIES = [
 
 interface Playlist { playlistId: string; title: string; channel: string; thumbnail: string; videoCount: string; }
 
+// Same song uploaded by different channels → same key, so it shows only once.
+const normSongTitle = (t: string) =>
+  (t || "").toLowerCase()
+    .replace(/\(.*?\)|\[.*?\]/g, " ")
+    .replace(/official|video|lyrical|lyrics|full song|audio|4k|hd|uhd|remix|song|new|latest|20\d\d|\|.*$/g, " ")
+    .replace(/[^a-z0-9\u0900-\u097f]+/g, " ").trim().slice(0, 40);
+
+const rankBadgeClass = (r: number) =>
+  r === 1 ? "bg-primary text-primary-foreground shadow-lg glow-gold"
+  : r === 2 ? "bg-secondary text-foreground ring-1 ring-foreground/40"
+  : r === 3 ? "bg-accent text-accent-foreground"
+  : "bg-background/80 text-primary";
+
 const Music = () => {
   const { play, current } = useMusicPlayer();
   const [category, setCategory] = useState("trending");
@@ -79,7 +92,10 @@ const Music = () => {
           const raw: Song[] = Array.isArray(json?.songs) ? json.songs : [];
           for (const s of raw) {
             if (!s?.videoId || seenRef.current.has(s.videoId)) continue;
+            const tk = "t:" + normSongTitle(s.title);
+            if (tk.length > 4 && seenRef.current.has(tk)) continue;
             seenRef.current.add(s.videoId);
+            if (tk.length > 4) seenRef.current.add(tk);
             addedSongs.push(s);
           }
         } else {
