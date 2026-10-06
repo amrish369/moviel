@@ -392,6 +392,86 @@ async function fetchYT(searchUrl: string): Promise<string> {
   return await res.text();
 }
 
+// ---------- AI ranked trending chart ----------
+function normTitle(t: string): string {
+  return t.toLowerCase()
+    .replace(/\(.*?\)|\[.*?\]/g, ' ')
+    .replace(/official|video|lyrical|lyrics|full song|audio|4k|hd|uhd|remix|song|new|latest|20\d\d|\|.*$/g, ' ')
+    .replace(/[^a-z0-9\u0900-\u097f]+/g, ' ').trim().slice(0, 40);
+}
+
+function parseViews(v: string): number {
+  const m = (v || '').replace(/,/g, '').match(/([\d.]+)\s*([KMB])?/i);
+  if (!m) return 0;
+  const n = parseFloat(m[1]);
+  const mul = { K: 1e3, M: 1e6, B: 1e9 }[(m[2] || '').toUpperCase() as 'K'] || 1;
+  return n * mul;
+}
+
+const CHART_LABEL: Record<string, string> = {
+  trending: 'Indian (all languages: Hindi, Punjabi, Haryanvi, Bhojpuri, South)',
+  hindi: 'Hindi / Bollywood', haryanvi: 'Haryanvi', bhojpuri: 'Bhojpuri', punjabi: 'Punjabi',
+};
+
+const chartCache = new Map<string, { at: number; songs: Song[]; source: string }>();
+
+async function askAi(category: string): Promise<{ list: { title: string; artist: string }[]; source: string }> {
+  const today = new Date().toISOString().slice(0, 10);
+  const prompt = `Today is ${today}. List the top 25 currently trending ${CHART_LABEL[category] || CHART_LABEL.trending} songs in India right now (YouTube, Spotify, Instagram reels charts), ranked #1 first. Each song must be unique. Return ONLY JSON: {"songs":[{"title":"","artist":""}]}`;
+  const parse = (txt: string) => {
+    const s = txt.indexOf('{'), e = txt.lastIndexOf('}');
+    const j = JSON.parse(txt.slice(s, e + 1));
+    return (Array.isArray(j?.songs) ? j.songs : []).filter((x: any) => x?.title).slice(0, 25);
+  };
+  const grokKey = Deno.env.get('GROK_API_KEY') || Deno.env.get('XAI_API_KEY');
+  if (grokKey) {
+    try {
+      const r = await fetch('https://api.x.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${grokKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: 'grok-3-mini', messages: [{ role: 'user', content: prompt }] }),
+      });
+      if (r.ok) { const list = parse((await r.json())?.choices?.[0]?.message?.content || ''); if (list.length) return { list, source: 'grok' }; }
+      else console.log('grok status', r.status);
+    } catch (e) { console.log('grok err', String(e)); }
+  }
+  try {
+    const r = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${Deno.env.get('LOVABLE_API_KEY')}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'google/gemini-2.5-flash', messages: [{ role: 'user', content: prompt }] }),
+    });
+    if (r.ok) { const list = parse((await r.json())?.choices?.[0]?.message?.content || ''); if (list.length) return { list, source: 'gemini' }; }
+    else console.log('gemini status', r.status);
+  } catch (e) { console.log('gemini err', String(e)); }
+  return { list: [], source: 'none' };
+}
+
+async function getAiChart(category: string): Promise<{ songs: Song[]; source: string }> {
+  const hit = chartCache.get(category);
+  if (hit && Date.now() - hit.at < 6 * 3600_000) return hit;
+  const { list, source } = await askAi(category);
+  if (!list.length) return { songs: [], source };
+  const resolved = await Promise.all(list.map(async (it) => {
+    try {
+      const html = await fetchYT(`https://www.youtube.com/results?search_query=${encodeURIComponent(`${it.title} ${it.artist} song`)}&sp=EgIQAQ%253D%253D&hl=en&gl=IN`);
+      return scrapeYouTubeSearch(html)[0] || null;
+    } catch { return null; }
+  }));
+  const out: Song[] = [];
+  const ids = new Set<string>(), titles = new Set<string>();
+  for (const s of resolved) {
+    if (!s) continue;
+    const k = normTitle(s.title);
+    if (ids.has(s.videoId) || (k && titles.has(k))) continue;
+    ids.add(s.videoId); if (k) titles.add(k);
+    out.push(s);
+  }
+  const entry = { at: Date.now(), songs: out, source };
+  if (out.length >= 5) chartCache.set(category, entry);
+  return entry;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   try {
@@ -482,8 +562,20 @@ Deno.serve(async (req) => {
       });
     }
 
-    const songs = rank(scrapeYouTubeSearch(html));
-    return new Response(JSON.stringify({ query: baseQuery, category, page, count: songs.length, songs, hasMore: true }), {
+    let songs = rank(scrapeYouTubeSearch(html));
+    let source = 'youtube';
+    // Page 1 of a category = AI-ranked live chart (Grok → Gemini → YouTube views).
+    if (!q && page === 1) {
+      const chart = await getAiChart(category);
+      if (chart.songs.length >= 5) {
+        const seen = new Set(chart.songs.map((s) => normTitle(s.title)));
+        songs = [...chart.songs, ...songs.filter((s) => !seen.has(normTitle(s.title)))];
+        source = chart.source;
+      }
+    } else if (!q) {
+      songs.sort((a, b) => parseViews(b.views) - parseViews(a.views));
+    }
+    return new Response(JSON.stringify({ query: baseQuery, category, page, count: songs.length, songs, hasMore: true, source }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=1800' },
     });
   } catch (e) {
