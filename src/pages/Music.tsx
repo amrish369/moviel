@@ -14,6 +14,19 @@ const CATEGORIES = [
 
 interface Playlist { playlistId: string; title: string; channel: string; thumbnail: string; videoCount: string; }
 
+// Same song uploaded by different channels → same key, so it shows only once.
+const normSongTitle = (t: string) =>
+  (t || "").toLowerCase()
+    .replace(/\(.*?\)|\[.*?\]/g, " ")
+    .replace(/official|video|lyrical|lyrics|full song|audio|4k|hd|uhd|remix|song|new|latest|20\d\d|\|.*$/g, " ")
+    .replace(/[^a-z0-9\u0900-\u097f]+/g, " ").trim().slice(0, 40);
+
+const rankBadgeClass = (r: number) =>
+  r === 1 ? "bg-primary text-primary-foreground shadow-lg glow-gold"
+  : r === 2 ? "bg-secondary text-foreground ring-1 ring-foreground/40"
+  : r === 3 ? "bg-accent text-accent-foreground"
+  : "bg-background/80 text-primary";
+
 const Music = () => {
   const { play, current } = useMusicPlayer();
   const [category, setCategory] = useState("trending");
@@ -79,7 +92,10 @@ const Music = () => {
           const raw: Song[] = Array.isArray(json?.songs) ? json.songs : [];
           for (const s of raw) {
             if (!s?.videoId || seenRef.current.has(s.videoId)) continue;
+            const tk = "t:" + normSongTitle(s.title);
+            if (tk.length > 4 && seenRef.current.has(tk)) continue;
             seenRef.current.add(s.videoId);
+            if (tk.length > 4) seenRef.current.add(tk);
             addedSongs.push(s);
           }
         } else {
@@ -266,8 +282,10 @@ const Music = () => {
 
         {tab === "songs" && (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            {songs.map((s) => {
+            {songs.map((s, i) => {
               const active = current?.videoId === s.videoId;
+              const rankNo = i + 1;
+              const showRank = !submittedQuery;
               return (
                 <div key={s.videoId} className="text-left group">
                   <button onClick={() => play(s, songs)} className="w-full text-left" aria-label={`Play ${s.title}`}>
@@ -279,6 +297,11 @@ const Music = () => {
                           <Play className="w-4 h-4 text-primary-foreground fill-primary-foreground ml-0.5" />
                         </div>
                       </div>
+                      {showRank && (
+                        <span className={`absolute top-1 left-1 min-w-[28px] h-6 px-1.5 rounded-md flex items-center justify-center font-display text-xs font-bold ${rankBadgeClass(rankNo)}`}>
+                          {rankNo === 1 ? "👑 #1" : rankNo === 2 ? "🥈 #2" : rankNo === 3 ? "🥉 #3" : `#${rankNo}`}
+                        </span>
+                      )}
                       {s.duration && (
                         <span className="absolute bottom-1 right-1 text-[10px] font-medium text-white bg-black/70 px-1.5 py-0.5 rounded">
                           {s.duration}
