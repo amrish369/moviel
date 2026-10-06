@@ -417,11 +417,13 @@ const chartCache = new Map<string, { at: number; songs: Song[]; source: string }
 
 async function askAi(category: string): Promise<{ list: { title: string; artist: string }[]; source: string }> {
   const today = new Date().toISOString().slice(0, 10);
-  const prompt = `Today is ${today}. List the top 25 currently trending ${CHART_LABEL[category] || CHART_LABEL.trending} songs in India right now (YouTube, Spotify, Instagram reels charts), ranked #1 first. Each song must be unique. Return ONLY JSON: {"songs":[{"title":"","artist":""}]}`;
+  const prompt = `Today is ${today}. List the top 20 currently trending ${CHART_LABEL[category] || CHART_LABEL.trending} songs in India right now (YouTube, Spotify, Instagram reels charts), ranked #1 first. Each song must be unique. Keep it short. Return ONLY JSON: {"songs":[{"title":"","artist":""}]}`;
   const parse = (txt: string) => {
     const s = txt.indexOf('{'), e = txt.lastIndexOf('}');
-    const j = JSON.parse(txt.slice(s, e + 1));
-    return (Array.isArray(j?.songs) ? j.songs : []).filter((x: any) => x?.title).slice(0, 25);
+    if (s < 0 || e <= s) return [];
+    let j: any;
+    try { j = JSON.parse(txt.slice(s, e + 1)); } catch { return []; }
+    return (Array.isArray(j?.songs) ? j.songs : []).filter((x: any) => x?.title).slice(0, 20);
   };
   const grokKey = Deno.env.get('GROK_API_KEY') || Deno.env.get('XAI_API_KEY');
   if (grokKey) {
@@ -439,7 +441,7 @@ async function askAi(category: string): Promise<{ list: { title: string; artist:
     const r = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: { Authorization: `Bearer ${Deno.env.get('LOVABLE_API_KEY')}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'google/gemini-2.5-flash', messages: [{ role: 'user', content: prompt }] }),
+      body: JSON.stringify({ model: 'google/gemini-2.5-flash', messages: [{ role: 'user', content: prompt }], response_format: { type: 'json_object' }, reasoning_effort: 'low' }),
     });
     if (r.ok) {
       const txt = (await r.json())?.choices?.[0]?.message?.content || '';
