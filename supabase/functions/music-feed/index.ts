@@ -452,12 +452,17 @@ async function getAiChart(category: string): Promise<{ songs: Song[]; source: st
   if (hit && Date.now() - hit.at < 6 * 3600_000) return hit;
   const { list, source } = await askAi(category);
   if (!list.length) return { songs: [], source };
-  const resolved = await Promise.all(list.map(async (it) => {
-    try {
-      const html = await fetchYT(`https://www.youtube.com/results?search_query=${encodeURIComponent(`${it.title} ${it.artist} song`)}&sp=EgIQAQ%253D%253D&hl=en&gl=IN`);
-      return scrapeYouTubeSearch(html)[0] || null;
-    } catch { return null; }
-  }));
+  const resolved: (Song | null)[] = [];
+  for (let i = 0; i < list.length; i += 6) {
+    const batch = await Promise.all(list.slice(i, i + 6).map(async (it) => {
+      try {
+        const html = await fetchYT(`https://www.youtube.com/results?search_query=${encodeURIComponent(`${it.title} ${it.artist} song`)}&hl=en&gl=IN`);
+        return scrapeYouTubeSearch(html)[0] || null;
+      } catch { return null; }
+    }));
+    resolved.push(...batch);
+  }
+  console.log('chart', category, source, 'ai', list.length, 'resolved', resolved.filter(Boolean).length);
   const out: Song[] = [];
   const ids = new Set<string>(), titles = new Set<string>();
   for (const s of resolved) {
