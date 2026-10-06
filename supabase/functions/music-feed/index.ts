@@ -441,8 +441,12 @@ async function askAi(category: string): Promise<{ list: { title: string; artist:
       headers: { Authorization: `Bearer ${Deno.env.get('LOVABLE_API_KEY')}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: 'google/gemini-2.5-flash', messages: [{ role: 'user', content: prompt }] }),
     });
-    if (r.ok) { const list = parse((await r.json())?.choices?.[0]?.message?.content || ''); if (list.length) return { list, source: 'gemini' }; }
-    else console.log('gemini status', r.status);
+    if (r.ok) {
+      const txt = (await r.json())?.choices?.[0]?.message?.content || '';
+      const list = parse(txt);
+      console.log('gemini list', list.length, txt.slice(0, 120));
+      if (list.length) return { list, source: 'gemini' };
+    } else console.log('gemini status', r.status, (await r.text()).slice(0, 200));
   } catch (e) { console.log('gemini err', String(e)); }
   return { list: [], source: 'none' };
 }
@@ -451,6 +455,7 @@ async function getAiChart(category: string): Promise<{ songs: Song[]; source: st
   const hit = chartCache.get(category);
   if (hit && Date.now() - hit.at < 6 * 3600_000) return hit;
   const { list, source } = await askAi(category);
+  console.log('askAi done', category, source, list.length);
   if (!list.length) return { songs: [], source };
   const resolved: (Song | null)[] = [];
   for (let i = 0; i < list.length; i += 6) {
