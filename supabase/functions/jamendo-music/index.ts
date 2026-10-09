@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
       audioformat: 'mp32', include: 'musicinfo', imagesize: '300',
       order: 'popularity_total',
     });
-    if (q) { p.set('search', q); p.delete('order'); }
+    if (q) { p.set('namesearch', q); }
     if (tag) p.set('tags', tag);
     const r = await fetch(`https://api.jamendo.com/v3.0/tracks/?${p}`);
     const j = await r.json();
