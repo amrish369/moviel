@@ -20,10 +20,10 @@ Deno.serve(async (req) => {
     const p = new URLSearchParams({
       client_id: clientId, format: 'json', limit: String(limit), offset: String((page - 1) * limit),
       audioformat: 'mp32', include: 'musicinfo', imagesize: '300',
-      order: q ? 'relevance' : 'popularity_week',
+      order: 'popularity_total',
     });
-    if (q) p.set('search', q);
-    if (tag) p.set('fuzzytags', tag);
+    if (q) { p.set('namesearch', q); p.delete('order'); }
+    if (tag) p.set('tags', tag);
     const r = await fetch(`https://api.jamendo.com/v3.0/tracks/?${p}`);
     const j = await r.json();
     const fmt = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
