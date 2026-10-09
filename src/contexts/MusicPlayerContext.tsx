@@ -8,6 +8,8 @@ export interface Song {
   duration?: string;
   views?: string;
   playlistId?: string; // when set, iframe plays whole YT playlist
+  audioUrl?: string; // direct MP3 (Jamendo) → native audio, true background play
+  downloadUrl?: string;
 }
 
 interface Ctx {
@@ -52,8 +54,19 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
   const [duration, setDuration] = useState(0);
 
   const current = queue[index] || null;
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const isAudioRef = useRef(false);
+  isAudioRef.current = Boolean(current?.audioUrl);
 
   const post = useCallback((func: string, args: any[] = []) => {
+    if (isAudioRef.current) {
+      const a = audioRef.current;
+      if (!a) return;
+      if (func === "playVideo") a.play().catch(() => {});
+      else if (func === "pauseVideo") a.pause();
+      else if (func === "seekTo") { try { a.currentTime = args[0]; } catch {} }
+      return;
+    }
     const win = iframeRef.current?.contentWindow;
     if (!win) return;
     win.postMessage(JSON.stringify({ event: "command", func, args }), "*");
@@ -80,6 +93,13 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
     setIndex(idx);
     setIsPlaying(true);
     setExpanded(true);
+    const target = q[idx];
+    if (target?.audioUrl) {
+      if (!audioRef.current) { audioRef.current = new Audio(); (audioRef.current as any).playsInline = true; }
+      const a = audioRef.current;
+      a.src = target.audioUrl;
+      a.play().catch(() => {});
+    } else { try { audioRef.current?.pause(); } catch {} }
     // Kick off the silent keep-alive audio on this user gesture so the OS
     // grants the tab audio focus — this keeps the YouTube iframe from being
     // suspended when the screen locks or the tab is backgrounded.
@@ -136,6 +156,7 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
     setCurrentTime(0);
     setDuration(0);
     try { silentAudioRef.current?.pause(); } catch {}
+    try { audioRef.current?.pause(); } catch {}
     try { wakeLockRef.current?.release?.(); wakeLockRef.current = null; } catch {}
   }, []);
 
@@ -167,7 +188,7 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
 
   // Handshake: tell iframe we want state + info updates, then poll time.
   useEffect(() => {
-    if (!current) return;
+    if (!current || current.audioUrl) return;
     const iframe = iframeRef.current;
     const win = iframe?.contentWindow;
     if (!win) return;
@@ -190,6 +211,42 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
     }, 750);
     return () => { cancelled = true; clearTimeout(t1); clearTimeout(t2); clearInterval(poll); };
   }, [current?.videoId, current?.playlistId, post]);
+
+  // Native audio engine for direct-MP3 tracks (works with screen off / background).
+  useEffect(() => {
+    if (!audioRef.current) {
+      const a = new Audio();
+      a.preload = "auto";
+      (a as any).playsInline = true;
+      audioRef.current = a;
+    }
+    const a = audioRef.current;
+    if (!current?.audioUrl) { a.pause(); return; }
+    if (a.src !== current.audioUrl) { a.src = current.audioUrl; setCurrentTime(0); setDuration(0); }
+    if (isPlaying) a.play().catch(() => {});
+  }, [current?.audioUrl]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const a = audioRef.current;
+    if (!a) return;
+    const onTime = () => { if (isAudioRef.current) setCurrentTime(a.currentTime); };
+    const onMeta = () => { if (isAudioRef.current && isFinite(a.duration)) setDuration(a.duration); };
+    const onPlay = () => { if (isAudioRef.current) setIsPlaying(true); };
+    const onPause = () => { if (isAudioRef.current && !a.ended) setIsPlaying(false); };
+    const onEnd = () => { if (!isAudioRef.current) return; if (queue.length > 1) next(); else setIsPlaying(false); };
+    a.addEventListener("timeupdate", onTime);
+    a.addEventListener("loadedmetadata", onMeta);
+    a.addEventListener("play", onPlay);
+    a.addEventListener("pause", onPause);
+    a.addEventListener("ended", onEnd);
+    return () => {
+      a.removeEventListener("timeupdate", onTime);
+      a.removeEventListener("loadedmetadata", onMeta);
+      a.removeEventListener("play", onPlay);
+      a.removeEventListener("pause", onPause);
+      a.removeEventListener("ended", onEnd);
+    };
+  }, [queue.length, next, current?.audioUrl]);
 
   // MediaSession API — lock-screen controls + hints to OS to keep audio alive
   // when screen turns off (works on Android Chrome when the tab has audio focus).
