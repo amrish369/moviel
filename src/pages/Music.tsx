@@ -78,7 +78,8 @@ const Music = () => {
   // Reset + first load when category / query / tab changes
   useEffect(() => {
     seenRef.current = new Set();
-    setSongs([]); setPlaylists([]); setPage(1); setHasMore(true); setError(null);
+    reqId.current++; // cancel any in-flight load so it can't leave the list stuck
+    setSongs([]); setPlaylists([]); setPage(1); setHasMore(true); setError(null); setLoading(false);
   }, [category, submittedQuery, tab]);
 
   const loadMore = useCallback(async () => {
