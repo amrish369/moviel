@@ -30,11 +30,12 @@ const MiniPlayer = () => {
   // Single persistent iframe. Wrapper morphs based on expanded/showVideo.
   // When expanded + showVideo: big centered video (fixed positioned).
   // Otherwise: 1x1 offscreen (audio keeps playing).
-  const showBigVideo = expanded && showVideo;
+  const isAudio = Boolean(current.audioUrl);
+  const showBigVideo = expanded && showVideo && !isAudio;
   const ytWatchUrl = isPlaylistOnly
     ? `https://www.youtube.com/playlist?list=${current.playlistId}`
     : `https://www.youtube.com/watch?v=${current.videoId}`;
-  const downloadUrl = `https://en.savefrom.net/#url=${encodeURIComponent(ytWatchUrl)}`;
+  const downloadUrl = isAudio ? (current.downloadUrl || current.audioUrl!) : `https://en.savefrom.net/#url=${encodeURIComponent(ytWatchUrl)}`;
   const iframeWrapperStyle: React.CSSProperties = showBigVideo
     ? {}
     : { position: "fixed", left: -9999, top: -9999, width: 1, height: 1, opacity: 0, pointerEvents: "none", zIndex: -1 };
@@ -48,7 +49,7 @@ const MiniPlayer = () => {
         aria-hidden={!showBigVideo}
       >
         <div className={showBigVideo ? "aspect-video rounded-2xl overflow-hidden bg-black shadow-2xl" : ""}>
-          <iframe
+          {!isAudio && <iframe
             key={`${current.videoId}-${current.playlistId || "video"}`}
             ref={iframeRef}
             src={src}
@@ -56,7 +57,7 @@ const MiniPlayer = () => {
             allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
             allowFullScreen
             className={showBigVideo ? "w-full h-full border-0" : ""}
-          />
+          />}
         </div>
       </div>
 
@@ -74,8 +75,8 @@ const MiniPlayer = () => {
           </div>
           <div className="flex-1 flex flex-col items-center px-4 gap-6 overflow-y-auto py-6">
             {/* Spacer for the fixed video above */}
-            {showVideo && <div className="w-full max-w-2xl aspect-video" />}
-            {!showVideo && (
+            {showVideo && !isAudio && <div className="w-full max-w-2xl aspect-video" />}
+            {(!showVideo || isAudio) && (
               <div className="w-64 h-64 rounded-2xl overflow-hidden shadow-2xl relative mt-6">
                 <img src={current.thumbnail} alt={current.title} className="w-full h-full object-cover" />
                 <div className={`absolute inset-0 flex items-center justify-center ${isPlaying ? "animate-pulse" : ""}`}>
@@ -123,23 +124,26 @@ const MiniPlayer = () => {
                 </div>
               </div>
             )}
-            <button
+            {!isAudio && <button
               onClick={() => setShowVideo(!showVideo)}
               className="flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/60 hover:bg-secondary text-xs font-semibold text-foreground"
             >
               {showVideo ? <VideoOff className="w-4 h-4" /> : <Video className="w-4 h-4" />}
               {showVideo ? "Audio only" : "Show video"}
-            </button>
+            </button>}
             <a
               href={downloadUrl}
+              download={isAudio ? `${current.title}.mp3` : undefined}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/15 border border-primary/40 hover:bg-primary/25 text-xs font-semibold text-primary"
             >
-              <Download className="w-4 h-4" /> Download Video (MP4)
+              <Download className="w-4 h-4" /> {isAudio ? "Download MP3" : "Download Video (MP4)"}
             </a>
             <p className="text-[10px] text-muted-foreground text-center max-w-md">
-              Audio background me chalta rahega jab tak app khula hai. Mobile screen-off par YouTube pause kar sakta hai.
+              {isAudio
+                ? "🎧 Audio Mode: screen lock ya app minimize karne par bhi gaana chalta rahega."
+                : "Mobile screen-off par YouTube pause kar sakta hai. Background ke liye 🎧 Audio Mode category chuniye."}
             </p>
 
             {queue.length > 1 && (
