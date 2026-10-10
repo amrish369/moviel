@@ -5,7 +5,6 @@ import { Song, useMusicPlayer } from "@/contexts/MusicPlayerContext";
 
 // Only 4 languages as per requirement.
 const CATEGORIES = [
-  { id: "audio", label: "🎧 Audio Mode" },
   { id: "trending", label: "🔥 Trending" },
   { id: "hindi", label: "🎬 Hindi" },
   { id: "haryanvi", label: "🌾 Haryanvi" },
@@ -60,12 +59,6 @@ const Music = () => {
     const projectId = (import.meta as any).env.VITE_SUPABASE_PROJECT_ID;
     const anonKey = (import.meta as any).env.VITE_SUPABASE_PUBLISHABLE_KEY;
     const params = new URLSearchParams();
-    if (opts.category === "audio" && opts.tab === "songs") {
-      if (opts.q) params.set("q", opts.q); else params.set("tag", "pop");
-      params.set("page", String(pageNum));
-      const r = await fetch(`https://${projectId}.supabase.co/functions/v1/jamendo-music?${params}`, { headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` } });
-      return r.json();
-    }
     if (opts.tab === "songs") {
       // JioSaavn: real Hindi/regional songs as direct audio → background play
       if (opts.q) params.set("q", opts.q); else params.set("category", opts.category);
