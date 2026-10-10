@@ -31,6 +31,13 @@ interface Ctx {
   setShowVideo: (v: boolean) => void;
   setExpanded: (v: boolean) => void;
   registerIframe: (el: HTMLIFrameElement | null) => void;
+  /** true when the native audio stream is the active engine */
+  audioActive: boolean;
+  /** YouTube id currently used by the video iframe */
+  playVideoId: string | null;
+  videoStart: number;
+  resolvingVideo: boolean;
+  switchMode: (m: "audio" | "video") => Promise<boolean>;
 }
 
 const MusicCtx = createContext<Ctx | null>(null);
@@ -56,7 +63,15 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
   const current = queue[index] || null;
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const isAudioRef = useRef(false);
-  isAudioRef.current = Boolean(current?.audioUrl);
+  const [videoMode, setVideoMode] = useState(false);
+  const [ytMap, setYtMap] = useState<Record<string, string>>({});
+  const [videoStart, setVideoStart] = useState(0);
+  const [resolvingVideo, setResolvingVideo] = useState(false);
+  const currentTimeRef = useRef(0);
+  currentTimeRef.current = currentTime;
+  const playVideoId = current ? (current.audioUrl ? ytMap[current.videoId] || null : current.videoId) : null;
+  const audioActive = Boolean(current?.audioUrl) && !(videoMode && playVideoId);
+  isAudioRef.current = audioActive;
 
   const post = useCallback((func: string, args: any[] = []) => {
     if (isAudioRef.current) {
@@ -188,7 +203,7 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
 
   // Handshake: tell iframe we want state + info updates, then poll time.
   useEffect(() => {
-    if (!current || current.audioUrl) return;
+    if (!current || audioActive || !playVideoId) return;
     const iframe = iframeRef.current;
     const win = iframe?.contentWindow;
     if (!win) return;
@@ -202,15 +217,14 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
     // Do handshake a few times as iframe may not be ready immediately.
     const t1 = setTimeout(handshake, 300);
     const t2 = setTimeout(handshake, 1200);
-    setCurrentTime(0);
-    setDuration(0);
+    if (!current.audioUrl) { setCurrentTime(0); setDuration(0); }
     const poll = setInterval(() => {
       if (cancelled) return;
       post("getCurrentTime");
       post("getDuration");
     }, 750);
     return () => { cancelled = true; clearTimeout(t1); clearTimeout(t2); clearInterval(poll); };
-  }, [current?.videoId, current?.playlistId, post]);
+  }, [playVideoId, current?.playlistId, audioActive, post]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Native audio engine for direct-MP3 tracks (works with screen off / background).
   useEffect(() => {
@@ -221,10 +235,10 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
       audioRef.current = a;
     }
     const a = audioRef.current;
-    if (!current?.audioUrl) { a.pause(); return; }
+    if (!current?.audioUrl || !audioActive) { a.pause(); return; }
     if (a.src !== current.audioUrl) { a.src = current.audioUrl; setCurrentTime(0); setDuration(0); }
     if (isPlaying) a.play().catch(() => {});
-  }, [current?.audioUrl]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [current?.audioUrl, audioActive]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const a = audioRef.current;
@@ -301,6 +315,73 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
     return () => document.removeEventListener("visibilitychange", onVis);
   }, [isPlaying, post]);
 
+  const resolveYt = useCallback(async (song: Song): Promise<string | null> => {
+    try {
+      const env = (import.meta as any).env;
+      const q = `${song.title} ${song.channel.split(",")[0]} official video`;
+      const r = await fetch(`https://${env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/music-feed?type=songs&page=1&q=${encodeURIComponent(q)}`, {
+        headers: { apikey: env.VITE_SUPABASE_PUBLISHABLE_KEY, Authorization: `Bearer ${env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+      });
+      const j = await r.json();
+      const id = j?.songs?.find((s: Song) => s?.videoId && !s.videoId.startsWith("pl_"))?.videoId;
+      return id || null;
+    } catch { return null; }
+  }, []);
+
+  const switchMode = useCallback(async (m: "audio" | "video") => {
+    if (!current?.audioUrl) { setShowVideo(m === "video"); return true; }
+    const t = currentTimeRef.current;
+    if (m === "video") {
+      let id = ytMap[current.videoId];
+      if (!id) {
+        setResolvingVideo(true);
+        id = (await resolveYt(current)) || "";
+        setResolvingVideo(false);
+        if (!id) return false;
+        setYtMap((p) => ({ ...p, [current.videoId]: id }));
+      }
+      isAudioRef.current = false;
+      try { audioRef.current?.pause(); } catch {}
+      setVideoStart(Math.floor(t));
+      setShowVideo(true);
+      setVideoMode(true);
+    } else {
+      const a = audioRef.current;
+      if (a) { try { a.currentTime = t; } catch {} }
+      setVideoMode(false);
+    }
+    return true;
+  }, [current, ytMap, resolveYt]);
+
+  // Keep video mode across songs: resolve the next song's video automatically.
+  useEffect(() => {
+    if (!videoMode || !current?.audioUrl || ytMap[current.videoId]) return;
+    let off = false;
+    resolveYt(current).then((id) => {
+      if (off) return;
+      if (id) { setVideoStart(0); setYtMap((p) => ({ ...p, [current.videoId]: id })); }
+    });
+    return () => { off = true; };
+  }, [current?.videoId, videoMode]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Screen lock / app minimised while watching video → continue on direct audio.
+  useEffect(() => {
+    const onHide = () => {
+      if (document.visibilityState === "hidden" && videoMode && current?.audioUrl && isPlaying) {
+        const a = audioRef.current;
+        if (a) {
+          if (a.src !== current.audioUrl) a.src = current.audioUrl;
+          try { a.currentTime = currentTimeRef.current; } catch {}
+          isAudioRef.current = true;
+          a.play().catch(() => {});
+        }
+        setVideoMode(false);
+      }
+    };
+    document.addEventListener("visibilitychange", onHide);
+    return () => document.removeEventListener("visibilitychange", onHide);
+  }, [videoMode, current?.audioUrl, isPlaying]);
+
   const registerIframe = useCallback((el: HTMLIFrameElement | null) => {
     iframeRef.current = el;
   }, []);
@@ -308,7 +389,8 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
   const value = useMemo<Ctx>(() => ({
     current, queue, isPlaying, showVideo, expanded, currentTime, duration,
     play, toggle, next, prev, jumpTo, close, seekTo, seekBy, setShowVideo, setExpanded, registerIframe,
-  }), [current, queue, isPlaying, showVideo, expanded, currentTime, duration, play, toggle, next, prev, jumpTo, close, seekTo, seekBy, registerIframe]);
+    audioActive, playVideoId, videoStart, resolvingVideo, switchMode,
+  }), [current, queue, isPlaying, showVideo, expanded, currentTime, duration, play, toggle, next, prev, jumpTo, close, seekTo, seekBy, registerIframe, audioActive, playVideoId, videoStart, resolvingVideo, switchMode]);
 
   return <MusicCtx.Provider value={value}>{children}</MusicCtx.Provider>;
 };
