@@ -3,13 +3,14 @@ import { ChevronDown, ChevronUp, Download, ListMusic, Music, Pause, Play, Rewind
 import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
 
 const MiniPlayer = () => {
-  const { current, queue, isPlaying, showVideo, expanded, currentTime, duration, toggle, next, prev, jumpTo, close, seekTo, seekBy, setShowVideo, setExpanded, registerIframe } = useMusicPlayer();
+  const { current, queue, isPlaying, showVideo, expanded, currentTime, duration, toggle, next, prev, jumpTo, close, seekTo, seekBy, setShowVideo, setExpanded, registerIframe, audioActive, playVideoId, videoStart, resolvingVideo, switchMode } = useMusicPlayer();
+  const [modeErr, setModeErr] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const [showQueue, setShowQueue] = useState(false);
 
   useEffect(() => {
     registerIframe(iframeRef.current);
-  }, [registerIframe, current?.videoId]);
+  }, [registerIframe, current?.videoId, playVideoId, audioActive]);
 
   if (!current) return null;
   const currentIndex = queue.findIndex((s) => s.videoId === current.videoId);
@@ -25,17 +26,18 @@ const MiniPlayer = () => {
   const pct = duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0;
   const src = isPlaylistOnly
     ? `https://www.youtube.com/embed/videoseries?list=${current.playlistId}&autoplay=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1&iv_load_policy=3`
-    : `https://www.youtube.com/embed/${current.videoId}?autoplay=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1&iv_load_policy=3`;
+    : `https://www.youtube.com/embed/${playVideoId || current.videoId}?start=${current.audioUrl ? videoStart : 0}&autoplay=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1&iv_load_policy=3`;
 
   // Single persistent iframe. Wrapper morphs based on expanded/showVideo.
   // When expanded + showVideo: big centered video (fixed positioned).
   // Otherwise: 1x1 offscreen (audio keeps playing).
-  const isAudio = Boolean(current.audioUrl);
+  const isAudio = audioActive;
+  const hasAudio = Boolean(current.audioUrl);
   const showBigVideo = expanded && showVideo && !isAudio;
   const ytWatchUrl = isPlaylistOnly
     ? `https://www.youtube.com/playlist?list=${current.playlistId}`
     : `https://www.youtube.com/watch?v=${current.videoId}`;
-  const downloadUrl = isAudio ? (current.downloadUrl || current.audioUrl!) : `https://en.savefrom.net/#url=${encodeURIComponent(ytWatchUrl)}`;
+  const downloadUrl = hasAudio ? (current.downloadUrl || current.audioUrl!) : `https://en.savefrom.net/#url=${encodeURIComponent(ytWatchUrl)}`;
   const iframeWrapperStyle: React.CSSProperties = showBigVideo
     ? {}
     : { position: "fixed", left: -9999, top: -9999, width: 1, height: 1, opacity: 0, pointerEvents: "none", zIndex: -1 };
@@ -50,7 +52,7 @@ const MiniPlayer = () => {
       >
         <div className={showBigVideo ? "aspect-video rounded-2xl overflow-hidden bg-black shadow-2xl" : ""}>
           {!isAudio && <iframe
-            key={`${current.videoId}-${current.playlistId || "video"}`}
+            key={`${playVideoId || current.videoId}-${current.playlistId || "video"}`}
             ref={iframeRef}
             src={src}
             title={current.title}
@@ -124,7 +126,22 @@ const MiniPlayer = () => {
                 </div>
               </div>
             )}
-            {!isAudio && <button
+            {hasAudio && (
+              <div className="flex flex-col items-center gap-1">
+                <div className="flex p-1 rounded-full bg-secondary/60 border border-border" role="group" aria-label="Audio or video">
+                  <button onClick={() => { setModeErr(false); switchMode("audio"); }} aria-pressed={isAudio}
+                    className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold transition ${isAudio ? "bg-primary text-primary-foreground" : "text-foreground"}`}>
+                    <Music className="w-3.5 h-3.5" /> Audio
+                  </button>
+                  <button onClick={async () => { setModeErr(false); const ok = await switchMode("video"); if (!ok) setModeErr(true); }} aria-pressed={!isAudio} disabled={resolvingVideo}
+                    className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold transition ${!isAudio ? "bg-primary text-primary-foreground" : "text-foreground"}`}>
+                    {resolvingVideo ? <span className="w-3.5 h-3.5 rounded-full border-2 border-current border-t-transparent animate-spin" /> : <Video className="w-3.5 h-3.5" />} Video
+                  </button>
+                </div>
+                {modeErr && <p className="text-[10px] text-muted-foreground">Is gaane ka video nahi mila — audio chal raha hai.</p>}
+              </div>
+            )}
+            {!hasAudio && <button
               onClick={() => setShowVideo(!showVideo)}
               className="flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/60 hover:bg-secondary text-xs font-semibold text-foreground"
             >
@@ -133,17 +150,17 @@ const MiniPlayer = () => {
             </button>}
             <a
               href={downloadUrl}
-              download={isAudio ? `${current.title}.mp3` : undefined}
+              download={hasAudio ? `${current.title}.mp3` : undefined}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/15 border border-primary/40 hover:bg-primary/25 text-xs font-semibold text-primary"
             >
-              <Download className="w-4 h-4" /> {isAudio ? "Download MP3" : "Download Video (MP4)"}
+              <Download className="w-4 h-4" /> {hasAudio ? "Download MP3" : "Download Video (MP4)"}
             </a>
             <p className="text-[10px] text-muted-foreground text-center max-w-md">
-              {isAudio
-                ? "🎧 Audio Mode: screen lock ya app minimize karne par bhi gaana chalta rahega."
-                : "Mobile screen-off par YouTube pause kar sakta hai. Background ke liye 🎧 Audio Mode category chuniye."}
+              {hasAudio
+                ? (isAudio ? "🎧 Audio: screen lock par bhi gaana chalta rahega." : "🎬 Video: screen lock karte hi gaana apne aap audio par chalta rahega.")
+                : "Mobile screen-off par YouTube pause kar sakta hai."}
             </p>
 
             {queue.length > 1 && (
