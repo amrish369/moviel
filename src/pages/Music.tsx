@@ -66,6 +66,17 @@ const Music = () => {
       const r = await fetch(`https://${projectId}.supabase.co/functions/v1/jamendo-music?${params}`, { headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` } });
       return r.json();
     }
+    if (opts.tab === "songs") {
+      // JioSaavn: real Hindi/regional songs as direct audio → background play
+      if (opts.q) params.set("q", opts.q); else params.set("category", opts.category);
+      params.set("page", String(pageNum));
+      try {
+        const r = await fetch(`https://${projectId}.supabase.co/functions/v1/saavn-music?${params}`, { headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` } });
+        const j = await r.json();
+        if (Array.isArray(j?.songs) && j.songs.length) return j;
+      } catch { /* fall back to YouTube */ }
+      params.delete("category"); params.delete("q");
+    }
     if (opts.q) params.set("q", opts.q);
     else params.set("category", opts.category);
     params.set("type", opts.tab);
