@@ -3,6 +3,7 @@ import { Loader2, Play, Volume2, VolumeX, Star, Bookmark, Heart, Info, RefreshCw
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useUserLibrary } from "@/hooks/useUserLibrary";
+import { useMediaClaim } from "@/lib/mediaBus";
 
 type Trailer = {
   id: number;
@@ -168,6 +169,7 @@ const TrailerReels = ({ mood, category }: { mood?: string; category?: string }) 
   const [activeIdx, setActiveIdx] = useState(0);
   const [muted, setMuted] = useState(true);
   const [open, setOpen] = useState(false);
+  useMediaClaim(open, "trailer-reels", () => setOpen(false));
   const containerRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
 

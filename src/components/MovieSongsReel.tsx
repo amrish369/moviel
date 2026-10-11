@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Loader2, Music, Play, X } from "lucide-react";
+import { useMediaClaim } from "@/lib/mediaBus";
 
 interface Song {
   videoId: string;
@@ -16,6 +17,7 @@ const MovieSongsReel = ({ title, year }: { title: string; year?: number | string
   const [error, setError] = useState<string | null>(null);
   const [active, setActive] = useState<Song | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  useMediaClaim(Boolean(active), "movie-song", () => setActive(null));
 
   useEffect(() => {
     if (!title) return;

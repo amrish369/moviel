@@ -22,6 +22,7 @@ const MovieDetailPage = () => {
   const { movie, isLoading, error, fetchDetail } = useMovieDetail();
   usePerfTracking("movie-detail");
   const [trailerOpen, setTrailerOpen] = useState(false);
+  useMediaClaim(trailerOpen, "movie-trailer", () => setTrailerOpen(false));
 
   useEffect(() => {
     if (title) fetchDetail(title);
