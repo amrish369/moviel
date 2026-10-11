@@ -68,6 +68,7 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
   const [videoStart, setVideoStart] = useState(0);
   const [resolvingVideo, setResolvingVideo] = useState(false);
   const currentTimeRef = useRef(0);
+  const switchModeRef = useRef<((m: "audio" | "video") => Promise<boolean>) | null>(null);
   currentTimeRef.current = currentTime;
   const playVideoId = current ? (current.audioUrl ? ytMap[current.videoId] || null : current.videoId) : null;
   const audioActive = Boolean(current?.audioUrl) && !(videoMode && playVideoId);
@@ -114,11 +115,12 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
       const a = audioRef.current;
       a.src = target.audioUrl;
       a.play().catch(() => {});
+      try { silentAudioRef.current?.pause(); } catch {}
     } else { try { audioRef.current?.pause(); } catch {} }
     // Kick off the silent keep-alive audio on this user gesture so the OS
     // grants the tab audio focus — this keeps the YouTube iframe from being
     // suspended when the screen locks or the tab is backgrounded.
-    try {
+    if (!target?.audioUrl) try {
       if (!silentAudioRef.current) {
         // 1s of silent MP3 (base64), looped.
         const a = new Audio(
@@ -252,8 +254,15 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
     a.addEventListener("loadedmetadata", onMeta);
     a.addEventListener("play", onPlay);
     a.addEventListener("pause", onPause);
+    const onErr = () => {
+      if (!isAudioRef.current || !a.src || a.src.startsWith("data:")) return;
+      // Stream failed → try the YouTube video of the same song, else skip.
+      switchModeRef.current?.("video").then((ok) => { if (!ok) { if (queue.length > 1) next(); else setIsPlaying(false); } });
+    };
     a.addEventListener("ended", onEnd);
+    a.addEventListener("error", onErr);
     return () => {
+      a.removeEventListener("error", onErr);
       a.removeEventListener("timeupdate", onTime);
       a.removeEventListener("loadedmetadata", onMeta);
       a.removeEventListener("play", onPlay);
@@ -347,11 +356,18 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
       setVideoMode(true);
     } else {
       const a = audioRef.current;
-      if (a) { try { a.currentTime = t; } catch {} }
+      if (a) {
+        if (a.src !== current.audioUrl) a.src = current.audioUrl;
+        try { a.currentTime = t; } catch {}
+        isAudioRef.current = true;
+        if (isPlaying) a.play().catch(() => {});
+      }
       setVideoMode(false);
     }
     return true;
-  }, [current, ytMap, resolveYt]);
+  }, [current, ytMap, resolveYt, isPlaying]);
+
+  switchModeRef.current = switchMode;
 
   // Keep video mode across songs: resolve the next song's video automatically.
   useEffect(() => {

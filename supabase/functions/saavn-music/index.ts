@@ -34,9 +34,24 @@ Deno.serve(async (req) => {
     const hit = cache.get(key);
     if (hit && Date.now() - hit.at < 3 * 3600_000) return json(hit.body);
     const p = new URLSearchParams({ __call: 'search.getResults', _format: 'json', _marker: '0', api_version: '4', ctx: 'web6dot0', n: '30', p: String(page), q: query });
-    const r = await fetch(`https://www.jiosaavn.com/api.php?${p}`, { headers: { 'User-Agent': 'Mozilla/5.0' } });
-    const j = await r.json();
-    const songs = (j?.results || []).map((t: any) => {
+    const LANG: Record<string, string> = { trending: 'hindi', hindi: 'hindi', haryanvi: 'haryanvi', bhojpuri: 'bhojpuri', punjabi: 'punjabi' };
+    let list: any[] = [];
+    let source = 'saavn';
+    // Page 1 of a category = JioSaavn's live trending chart (real rank order).
+    if (!q && page === 1 && LANG[cat]) {
+      const tp = new URLSearchParams({ __call: 'content.getTrending', _format: 'json', _marker: '0', api_version: '4', ctx: 'web6dot0', entity_type: 'song', entity_language: LANG[cat] });
+      try {
+        const tr = await fetch(`https://www.jiosaavn.com/api.php?${tp}`, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+        const tj = await tr.json();
+        if (Array.isArray(tj)) { list = tj; source = 'saavn-trending'; }
+      } catch { /* fall back to search */ }
+    }
+    if (!list.length) {
+      const r = await fetch(`https://www.jiosaavn.com/api.php?${p}`, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+      const j = await r.json();
+      list = j?.results || [];
+    }
+    const songs = list.map((t: any) => {
       const mi = t.more_info || {};
       const audio = mi.encrypted_media_url ? decrypt(mi.encrypted_media_url) : '';
       if (!audio) return null;
@@ -51,7 +66,7 @@ Deno.serve(async (req) => {
         downloadUrl: audio,
       };
     }).filter(Boolean);
-    const body = JSON.stringify({ songs, hasMore: songs.length >= 20, source: 'saavn' });
+    const body = JSON.stringify({ songs, hasMore: songs.length >= 15, source });
     if (songs.length) cache.set(key, { at: Date.now(), body });
     return json(body);
   } catch (e) {
