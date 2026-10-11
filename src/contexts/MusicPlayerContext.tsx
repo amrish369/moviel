@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { claimMedia, onMediaClaim } from "@/lib/mediaBus";
 
 export interface Song {
   videoId: string;
@@ -103,6 +104,7 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
   }, [post, duration]);
 
   const play = useCallback((song: Song, list?: Song[]) => {
+    claimMedia("music");
     const q = list && list.length ? list : [song];
     const idx = Math.max(0, q.findIndex((s) => s.videoId === song.videoId));
     setQueue(q);
