@@ -369,6 +369,41 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
 
   switchModeRef.current = switchMode;
 
+  // Reverse lookup: YouTube-only songs (playlists) → find direct JioSaavn audio
+  // so Audio/Video switch + lock-screen background play work on every song.
+  const triedSaavn = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const s = current;
+    if (!s || s.audioUrl || !s.videoId || s.videoId.startsWith("pl_") || triedSaavn.current.has(s.videoId)) return;
+    triedSaavn.current.add(s.videoId);
+    let off = false;
+    const clean = (t: string) => t
+      .replace(/\(.*?\)|\[.*?\]|\{.*?\}/g, " ")
+      .split(/[|\-–—:]/)[0]
+      .replace(/\b(official|video|lyrical|lyrics?|full song|audio|song|hd|4k|remix|cover)\b/gi, " ")
+      .replace(/\s+/g, " ").trim();
+    const title = clean(s.title);
+    if (title.length < 2) return;
+    (async () => {
+      try {
+        const env = (import.meta as any).env;
+        const r = await fetch(`https://${env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/saavn-music?page=1&q=${encodeURIComponent(title)}`, {
+          headers: { apikey: env.VITE_SUPABASE_PUBLISHABLE_KEY, Authorization: `Bearer ${env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        });
+        const j = await r.json();
+        const norm = (x: string) => x.toLowerCase().replace(/[^a-z0-9\u0900-\u097f]/g, "");
+        const nt = norm(title);
+        const hit = (j?.songs || []).find((x: Song) => x?.audioUrl && nt && (norm(x.title).includes(nt) || nt.includes(norm(x.title))));
+        if (off || !hit?.audioUrl) return;
+        const vid = s.videoId;
+        setYtMap((p) => ({ ...p, [vid]: vid }));
+        setVideoMode(true); // keep the current video playing; toggle becomes available
+        setQueue((q) => q.map((x) => (x.videoId === vid ? { ...x, audioUrl: hit.audioUrl } : x)));
+      } catch { /* stay on YouTube */ }
+    })();
+    return () => { off = true; };
+  }, [current?.videoId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Keep video mode across songs: resolve the next song's video automatically.
   useEffect(() => {
     if (!videoMode || !current?.audioUrl || ytMap[current.videoId]) return;
