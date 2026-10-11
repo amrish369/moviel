@@ -3,6 +3,7 @@ import { X, SkipBack, SkipForward, Bookmark, BookmarkCheck, CheckCircle2, Circle
 import type { StudyVideo } from "@/hooks/useStudyFeed";
 import { useStudyLibrary } from "@/hooks/useStudyLibrary";
 import StudyQuiz from "@/components/StudyQuiz";
+import { useMediaClaim } from "@/lib/mediaBus";
 
 interface Props {
   videos: StudyVideo[];
@@ -19,6 +20,7 @@ const StudyVideoModal = ({ videos, index, subjectId, onClose, onIndexChange }: P
   const { progress, bookmarks, quizzes, saveProgress, setCompleted, resumeAt, toggleBookmark } = useStudyLibrary();
   const [startAt, setStartAt] = useState(0);
   const [showQuiz, setShowQuiz] = useState(false);
+  useMediaClaim(Boolean(current), "study", onClose);
 
   // Compute resume point when the video changes
   useEffect(() => {

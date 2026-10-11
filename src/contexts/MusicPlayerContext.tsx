@@ -146,10 +146,20 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
   const toggle = useCallback(() => {
     setIsPlaying((p) => {
       const nx = !p;
+      if (nx) claimMedia("music");
       post(nx ? "playVideo" : "pauseVideo");
       return nx;
     });
   }, [post]);
+
+  // Another section started a video/song → pause the music player.
+  useEffect(() => onMediaClaim("music", () => {
+    try { audioRef.current?.pause(); } catch {}
+    try { silentAudioRef.current?.pause(); } catch {}
+    iframeRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "command", func: "pauseVideo", args: [] }), "*");
+    setIsPlaying(false);
+    setExpanded(false);
+  }), []);
 
   const next = useCallback(() => {
     setIndex((i) => (queue.length ? (i + 1) % queue.length : 0));
