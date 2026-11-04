@@ -1,5 +1,34 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { claimMedia, onMediaClaim } from "@/lib/mediaBus";
+import { cleanSongTitle, isSameSong } from "@/lib/songMatch";
+
+// 0.1s valid silent WAV — used to unlock the audio element on a user tap.
+const SILENT_WAV = (() => {
+  const n = 800, buf = new Uint8Array(44 + n);
+  const dv = new DataView(buf.buffer);
+  const w = (o: number, s: string) => [...s].forEach((c, i) => (buf[o + i] = c.charCodeAt(0)));
+  w(0, "RIFF"); dv.setUint32(4, 36 + n, true); w(8, "WAVE"); w(12, "fmt ");
+  dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 1, true);
+  dv.setUint32(24, 8000, true); dv.setUint32(28, 8000, true); dv.setUint16(32, 1, true); dv.setUint16(34, 8, true);
+  w(36, "data"); dv.setUint32(40, n, true); buf.fill(128, 44);
+  let s = ""; buf.forEach((b) => (s += String.fromCharCode(b)));
+  return `data:audio/wav;base64,${btoa(s)}`;
+})();
+
+// Find the same song on JioSaavn (direct audio) for a YouTube-only track.
+async function matchSaavnAudio(song: { title: string; channel: string }): Promise<string | null> {
+  const title = cleanSongTitle(song.title);
+  if (title.length < 2) return null;
+  try {
+    const env = (import.meta as any).env;
+    const r = await fetch(`https://${env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/saavn-music?page=1&q=${encodeURIComponent(title)}`, {
+      headers: { apikey: env.VITE_SUPABASE_PUBLISHABLE_KEY, Authorization: `Bearer ${env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+    });
+    const j = await r.json();
+    const hit = (j?.songs || []).find((x: any) => x?.audioUrl && isSameSong(title, x.title));
+    return hit?.audioUrl || null;
+  } catch { return null; }
+}
 
 export interface Song {
   videoId: string;
