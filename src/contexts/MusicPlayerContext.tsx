@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { claimMedia, onMediaClaim } from "@/lib/mediaBus";
-import { cleanSongTitle, isSameSong } from "@/lib/songMatch";
+import { songCandidates, isSameSong } from "@/lib/songMatch";
 
 // 0.1s valid silent WAV — used to unlock the audio element on a user tap.
 const SILENT_WAV = (() => {
@@ -17,17 +17,18 @@ const SILENT_WAV = (() => {
 
 // Find the same song on JioSaavn (direct audio) for a YouTube-only track.
 async function matchSaavnAudio(song: { title: string; channel: string }): Promise<string | null> {
-  const title = cleanSongTitle(song.title);
-  if (title.length < 2) return null;
-  try {
-    const env = (import.meta as any).env;
-    const r = await fetch(`https://${env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/saavn-music?page=1&q=${encodeURIComponent(title)}`, {
-      headers: { apikey: env.VITE_SUPABASE_PUBLISHABLE_KEY, Authorization: `Bearer ${env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
-    });
-    const j = await r.json();
-    const hit = (j?.songs || []).find((x: any) => x?.audioUrl && isSameSong(title, x.title));
-    return hit?.audioUrl || null;
-  } catch { return null; }
+  const env = (import.meta as any).env;
+  for (const title of songCandidates(song.title)) {
+    try {
+      const r = await fetch(`https://${env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/saavn-music?page=1&q=${encodeURIComponent(title)}`, {
+        headers: { apikey: env.VITE_SUPABASE_PUBLISHABLE_KEY, Authorization: `Bearer ${env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+      });
+      const j = await r.json();
+      const hit = (j?.songs || []).find((x: any) => x?.audioUrl && isSameSong(title, x.title));
+      if (hit?.audioUrl) return hit.audioUrl;
+    } catch { /* try next */ }
+  }
+  return null;
 }
 
 export interface Song {
