@@ -383,49 +383,41 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
 
   // Reverse lookup: YouTube-only songs (playlists) → find direct JioSaavn audio
   // so Audio/Video switch + lock-screen background play work on every song.
+  // Pre-match current + next 3 songs ahead of time so switching / auto-next is instant.
   const triedSaavn = useRef<Set<string>>(new Set());
+  const triedYt = useRef<Set<string>>(new Set());
   useEffect(() => {
-    const s = current;
-    if (!s || s.audioUrl || !s.videoId || s.videoId.startsWith("pl_") || triedSaavn.current.has(s.videoId)) return;
-    triedSaavn.current.add(s.videoId);
-    let off = false;
-    const clean = (t: string) => t
-      .replace(/\(.*?\)|\[.*?\]|\{.*?\}/g, " ")
-      .split(/[|\-–—:]/)[0]
-      .replace(/\b(official|video|lyrical|lyrics?|full song|audio|song|hd|4k|remix|cover)\b/gi, " ")
-      .replace(/\s+/g, " ").trim();
-    const title = clean(s.title);
-    if (title.length < 2) return;
-    (async () => {
-      try {
-        const env = (import.meta as any).env;
-        const r = await fetch(`https://${env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/saavn-music?page=1&q=${encodeURIComponent(title)}`, {
-          headers: { apikey: env.VITE_SUPABASE_PUBLISHABLE_KEY, Authorization: `Bearer ${env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
-        });
-        const j = await r.json();
-        const norm = (x: string) => x.toLowerCase().replace(/[^a-z0-9\u0900-\u097f]/g, "");
-        const nt = norm(title);
-        const hit = (j?.songs || []).find((x: Song) => x?.audioUrl && nt && (norm(x.title).includes(nt) || nt.includes(norm(x.title))));
-        if (off || !hit?.audioUrl) return;
+    if (!queue.length) return;
+    const ahead = [0, 1, 2, 3].map((k) => queue[(index + k) % queue.length]).filter(Boolean);
+    for (const s of ahead) {
+      if (!s.videoId || s.videoId.startsWith("pl_")) continue;
+      if (!s.audioUrl && !triedSaavn.current.has(s.videoId)) {
+        triedSaavn.current.add(s.videoId);
         const vid = s.videoId;
-        setYtMap((p) => ({ ...p, [vid]: vid }));
-        setVideoMode(true); // keep the current video playing; toggle becomes available
-        setQueue((q) => q.map((x) => (x.videoId === vid ? { ...x, audioUrl: hit.audioUrl } : x)));
-      } catch { /* stay on YouTube */ }
-    })();
-    return () => { off = true; };
-  }, [current?.videoId]); // eslint-disable-line react-hooks/exhaustive-deps
+        matchSaavnAudio(s).then((url) => {
+          if (!url) return;
+          setYtMap((p) => ({ ...p, [vid]: vid }));
+          setQueue((q) => q.map((x) => (x.videoId === vid ? { ...x, audioUrl: url, downloadUrl: url } : x)));
+        });
+      } else if (s.audioUrl && !ytMap[s.videoId] && !triedYt.current.has(s.videoId)) {
+        triedYt.current.add(s.videoId);
+        const vid = s.videoId;
+        resolveYt(s).then((id) => { if (id) setYtMap((p) => ({ ...p, [vid]: id })); });
+      }
+    }
+  }, [queue, index]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Keep video mode across songs: resolve the next song's video automatically.
+  // A YouTube-only song just got its audio match: keep video playing on screen,
+  // but if the screen is already off, continue on audio right away.
   useEffect(() => {
-    if (!videoMode || !current?.audioUrl || ytMap[current.videoId]) return;
-    let off = false;
-    resolveYt(current).then((id) => {
-      if (off) return;
-      if (id) { setVideoStart(0); setYtMap((p) => ({ ...p, [current.videoId]: id })); }
-    });
-    return () => { off = true; };
-  }, [current?.videoId, videoMode]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!current?.audioUrl || current.audioUrl === undefined) return;
+    if (ytMap[current.videoId] === current.videoId && !videoMode && !current.videoId.startsWith("sv_")) {
+      if (document.visibilityState === "hidden") {
+        const a = audioRef.current;
+        if (a) { a.src = current.audioUrl; try { a.currentTime = currentTimeRef.current; } catch {} if (isPlaying) a.play().catch(() => {}); }
+      } else setVideoMode(true);
+    }
+  }, [current?.audioUrl]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Screen lock / app minimised while watching video → continue on direct audio.
   useEffect(() => {
