@@ -71,6 +71,8 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
   const currentTimeRef = useRef(0);
   const switchModeRef = useRef<((m: "audio" | "video") => Promise<boolean>) | null>(null);
   currentTimeRef.current = currentTime;
+  const currentIdRef = useRef<string | null>(null);
+  currentIdRef.current = current?.videoId || null;
   const playVideoId = current ? (current.audioUrl ? ytMap[current.videoId] || null : current.videoId) : null;
   const audioActive = Boolean(current?.audioUrl) && !(videoMode && playVideoId);
   isAudioRef.current = audioActive;
@@ -118,7 +120,15 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
       a.src = target.audioUrl;
       a.play().catch(() => {});
       try { silentAudioRef.current?.pause(); } catch {}
-    } else { try { audioRef.current?.pause(); } catch {} }
+      setVideoMode(false);
+    } else {
+      // YouTube-first song (playlist): unlock the audio engine on this tap so it can
+      // take over later when the screen locks.
+      if (!audioRef.current) { audioRef.current = new Audio(); (audioRef.current as any).playsInline = true; }
+      const a = audioRef.current;
+      try { a.src = SILENT_WAV; a.play().then(() => a.pause()).catch(() => {}); } catch {}
+      setVideoMode(true);
+    }
     // Kick off the silent keep-alive audio on this user gesture so the OS
     // grants the tab audio focus — this keeps the YouTube iframe from being
     // suspended when the screen locks or the tab is backgrounded.
@@ -396,6 +406,7 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
         const vid = s.videoId;
         matchSaavnAudio(s).then((url) => {
           if (!url) return;
+          if (currentIdRef.current === vid) setVideoMode(true); // keep the on-screen video, no restart
           setYtMap((p) => ({ ...p, [vid]: vid }));
           setQueue((q) => q.map((x) => (x.videoId === vid ? { ...x, audioUrl: url, downloadUrl: url } : x)));
         });
@@ -407,17 +418,7 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
     }
   }, [queue, index]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // A YouTube-only song just got its audio match: keep video playing on screen,
-  // but if the screen is already off, continue on audio right away.
-  useEffect(() => {
-    if (!current?.audioUrl || current.audioUrl === undefined) return;
-    if (ytMap[current.videoId] === current.videoId && !videoMode && !current.videoId.startsWith("sv_")) {
-      if (document.visibilityState === "hidden") {
-        const a = audioRef.current;
-        if (a) { a.src = current.audioUrl; try { a.currentTime = currentTimeRef.current; } catch {} if (isPlaying) a.play().catch(() => {}); }
-      } else setVideoMode(true);
-    }
-  }, [current?.audioUrl]); // eslint-disable-line react-hooks/exhaustive-deps
+
 
   // Screen lock / app minimised while watching video → continue on direct audio.
   useEffect(() => {
