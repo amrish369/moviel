@@ -14,6 +14,7 @@ import AffiliateBanner from "@/components/AffiliateBanner";
 import SiteFooter from "@/components/SiteFooter";
 import { AD_SLOTS } from "@/config/ads";
 import MovieSongsReel from "@/components/MovieSongsReel";
+import { useMediaClaim } from "@/lib/mediaBus";
 
 const MovieDetailPage = () => {
   const [searchParams] = useSearchParams();
