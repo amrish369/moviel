@@ -1,5 +1,34 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { claimMedia, onMediaClaim } from "@/lib/mediaBus";
+import { cleanSongTitle, isSameSong } from "@/lib/songMatch";
+
+// 0.1s valid silent WAV — used to unlock the audio element on a user tap.
+const SILENT_WAV = (() => {
+  const n = 800, buf = new Uint8Array(44 + n);
+  const dv = new DataView(buf.buffer);
+  const w = (o: number, s: string) => [...s].forEach((c, i) => (buf[o + i] = c.charCodeAt(0)));
+  w(0, "RIFF"); dv.setUint32(4, 36 + n, true); w(8, "WAVE"); w(12, "fmt ");
+  dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 1, true);
+  dv.setUint32(24, 8000, true); dv.setUint32(28, 8000, true); dv.setUint16(32, 1, true); dv.setUint16(34, 8, true);
+  w(36, "data"); dv.setUint32(40, n, true); buf.fill(128, 44);
+  let s = ""; buf.forEach((b) => (s += String.fromCharCode(b)));
+  return `data:audio/wav;base64,${btoa(s)}`;
+})();
+
+// Find the same song on JioSaavn (direct audio) for a YouTube-only track.
+async function matchSaavnAudio(song: { title: string; channel: string }): Promise<string | null> {
+  const title = cleanSongTitle(song.title);
+  if (title.length < 2) return null;
+  try {
+    const env = (import.meta as any).env;
+    const r = await fetch(`https://${env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/saavn-music?page=1&q=${encodeURIComponent(title)}`, {
+      headers: { apikey: env.VITE_SUPABASE_PUBLISHABLE_KEY, Authorization: `Bearer ${env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+    });
+    const j = await r.json();
+    const hit = (j?.songs || []).find((x: any) => x?.audioUrl && isSameSong(title, x.title));
+    return hit?.audioUrl || null;
+  } catch { return null; }
+}
 
 export interface Song {
   videoId: string;
@@ -71,6 +100,8 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
   const currentTimeRef = useRef(0);
   const switchModeRef = useRef<((m: "audio" | "video") => Promise<boolean>) | null>(null);
   currentTimeRef.current = currentTime;
+  const currentIdRef = useRef<string | null>(null);
+  currentIdRef.current = current?.videoId || null;
   const playVideoId = current ? (current.audioUrl ? ytMap[current.videoId] || null : current.videoId) : null;
   const audioActive = Boolean(current?.audioUrl) && !(videoMode && playVideoId);
   isAudioRef.current = audioActive;
@@ -118,7 +149,15 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
       a.src = target.audioUrl;
       a.play().catch(() => {});
       try { silentAudioRef.current?.pause(); } catch {}
-    } else { try { audioRef.current?.pause(); } catch {} }
+      setVideoMode(false);
+    } else {
+      // YouTube-first song (playlist): unlock the audio engine on this tap so it can
+      // take over later when the screen locks.
+      if (!audioRef.current) { audioRef.current = new Audio(); (audioRef.current as any).playsInline = true; }
+      const a = audioRef.current;
+      try { a.src = SILENT_WAV; a.play().then(() => a.pause()).catch(() => {}); } catch {}
+      setVideoMode(true);
+    }
     // Kick off the silent keep-alive audio on this user gesture so the OS
     // grants the tab audio focus — this keeps the YouTube iframe from being
     // suspended when the screen locks or the tab is backgrounded.
@@ -383,49 +422,32 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
 
   // Reverse lookup: YouTube-only songs (playlists) → find direct JioSaavn audio
   // so Audio/Video switch + lock-screen background play work on every song.
+  // Pre-match current + next 3 songs ahead of time so switching / auto-next is instant.
   const triedSaavn = useRef<Set<string>>(new Set());
+  const triedYt = useRef<Set<string>>(new Set());
   useEffect(() => {
-    const s = current;
-    if (!s || s.audioUrl || !s.videoId || s.videoId.startsWith("pl_") || triedSaavn.current.has(s.videoId)) return;
-    triedSaavn.current.add(s.videoId);
-    let off = false;
-    const clean = (t: string) => t
-      .replace(/\(.*?\)|\[.*?\]|\{.*?\}/g, " ")
-      .split(/[|\-–—:]/)[0]
-      .replace(/\b(official|video|lyrical|lyrics?|full song|audio|song|hd|4k|remix|cover)\b/gi, " ")
-      .replace(/\s+/g, " ").trim();
-    const title = clean(s.title);
-    if (title.length < 2) return;
-    (async () => {
-      try {
-        const env = (import.meta as any).env;
-        const r = await fetch(`https://${env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/saavn-music?page=1&q=${encodeURIComponent(title)}`, {
-          headers: { apikey: env.VITE_SUPABASE_PUBLISHABLE_KEY, Authorization: `Bearer ${env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
-        });
-        const j = await r.json();
-        const norm = (x: string) => x.toLowerCase().replace(/[^a-z0-9\u0900-\u097f]/g, "");
-        const nt = norm(title);
-        const hit = (j?.songs || []).find((x: Song) => x?.audioUrl && nt && (norm(x.title).includes(nt) || nt.includes(norm(x.title))));
-        if (off || !hit?.audioUrl) return;
+    if (!queue.length) return;
+    const ahead = [0, 1, 2, 3].map((k) => queue[(index + k) % queue.length]).filter(Boolean);
+    for (const s of ahead) {
+      if (!s.videoId || s.videoId.startsWith("pl_")) continue;
+      if (!s.audioUrl && !triedSaavn.current.has(s.videoId)) {
+        triedSaavn.current.add(s.videoId);
         const vid = s.videoId;
-        setYtMap((p) => ({ ...p, [vid]: vid }));
-        setVideoMode(true); // keep the current video playing; toggle becomes available
-        setQueue((q) => q.map((x) => (x.videoId === vid ? { ...x, audioUrl: hit.audioUrl } : x)));
-      } catch { /* stay on YouTube */ }
-    })();
-    return () => { off = true; };
-  }, [current?.videoId]); // eslint-disable-line react-hooks/exhaustive-deps
+        matchSaavnAudio(s).then((url) => {
+          if (!url) return;
+          if (currentIdRef.current === vid) setVideoMode(true); // keep the on-screen video, no restart
+          setYtMap((p) => ({ ...p, [vid]: vid }));
+          setQueue((q) => q.map((x) => (x.videoId === vid ? { ...x, audioUrl: url, downloadUrl: url } : x)));
+        });
+      } else if (s.audioUrl && !ytMap[s.videoId] && !triedYt.current.has(s.videoId)) {
+        triedYt.current.add(s.videoId);
+        const vid = s.videoId;
+        resolveYt(s).then((id) => { if (id) setYtMap((p) => ({ ...p, [vid]: id })); });
+      }
+    }
+  }, [queue, index]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Keep video mode across songs: resolve the next song's video automatically.
-  useEffect(() => {
-    if (!videoMode || !current?.audioUrl || ytMap[current.videoId]) return;
-    let off = false;
-    resolveYt(current).then((id) => {
-      if (off) return;
-      if (id) { setVideoStart(0); setYtMap((p) => ({ ...p, [current.videoId]: id })); }
-    });
-    return () => { off = true; };
-  }, [current?.videoId, videoMode]); // eslint-disable-line react-hooks/exhaustive-deps
+
 
   // Screen lock / app minimised while watching video → continue on direct audio.
   useEffect(() => {

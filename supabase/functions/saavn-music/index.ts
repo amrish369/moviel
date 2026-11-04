@@ -46,6 +46,21 @@ Deno.serve(async (req) => {
         if (Array.isArray(tj)) { list = tj; source = 'saavn-trending'; }
       } catch { /* fall back to search */ }
     }
+    // Mix in brand-new releases (this year / last year) so latest songs show too.
+    if (source === 'saavn-trending') {
+      try {
+        const yr = new Date().getFullYear();
+        const np = new URLSearchParams({ __call: 'search.getResults', _format: 'json', _marker: '0', api_version: '4', ctx: 'web6dot0', n: '30', p: '1', q: `new ${LANG[cat]} songs ${yr}` });
+        const nr = await fetch(`https://www.jiosaavn.com/api.php?${np}`, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+        const nj = await nr.json();
+        const ids = new Set(list.map((x: any) => x.id));
+        const fresh = (nj?.results || []).filter((x: any) => !ids.has(x.id) && parseInt(x.year || '0', 10) >= yr - 1);
+        const mixed: any[] = [];
+        const max = Math.max(list.length, fresh.length);
+        for (let i = 0; i < max; i++) { if (list[i]) mixed.push(list[i]); if (fresh[i]) mixed.push({ ...fresh[i], _new: true }); }
+        list = mixed;
+      } catch { /* trending only */ }
+    }
     if (!list.length) {
       const r = await fetch(`https://www.jiosaavn.com/api.php?${p}`, { headers: { 'User-Agent': 'Mozilla/5.0' } });
       const j = await r.json();
@@ -64,6 +79,7 @@ Deno.serve(async (req) => {
         duration: mi.duration ? fmt(parseInt(mi.duration, 10)) : '',
         audioUrl: audio,
         downloadUrl: audio,
+        ...(t._new ? { isNew: true } : {}),
       };
     }).filter(Boolean);
     const body = JSON.stringify({ songs, hasMore: songs.length >= 15, source });

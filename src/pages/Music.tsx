@@ -314,6 +314,9 @@ const Music = () => {
                           {rankNo === 1 ? "👑 #1" : rankNo === 2 ? "🥈 #2" : rankNo === 3 ? "🥉 #3" : `#${rankNo}`}
                         </span>
                       )}
+                      {(s as any).isNew && (
+                        <span className="absolute top-1 right-1 h-5 px-1.5 rounded-md flex items-center text-[10px] font-bold bg-primary text-primary-foreground">🆕 New</span>
+                      )}
                       {s.duration && (
                         <span className="absolute bottom-1 right-1 text-[10px] font-medium text-white bg-black/70 px-1.5 py-0.5 rounded">
                           {s.duration}
