@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronUp, Download, ListMusic, Music, Pause, Play, Rewind, FastForward, SkipBack, SkipForward, Video, VideoOff, X } from "lucide-react";
 import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
+import LikeButton from "@/components/LikeButton";
 
 const MiniPlayer = () => {
   const { current, queue, isPlaying, showVideo, expanded, currentTime, duration, toggle, next, prev, jumpTo, close, seekTo, seekBy, setShowVideo, setExpanded, registerIframe, audioActive, playVideoId, videoStart, resolvingVideo, switchMode } = useMusicPlayer();
@@ -102,6 +103,7 @@ const MiniPlayer = () => {
               <button onClick={toggle} aria-label={isPlaying ? "Pause" : "Play"} className="w-16 h-16 rounded-full bg-primary hover:bg-primary/90 glow-gold flex items-center justify-center">
                 {isPlaying ? <Pause className="w-7 h-7 text-primary-foreground fill-primary-foreground" /> : <Play className="w-7 h-7 text-primary-foreground fill-primary-foreground ml-1" />}
               </button>
+              <LikeButton song={current} size={5} className="w-11 h-11 bg-secondary/60" />
               <button onClick={() => seekBy(10)} aria-label="Forward 10 seconds" className="w-11 h-11 rounded-full bg-secondary/60 hover:bg-secondary flex items-center justify-center">
                 <FastForward className="w-5 h-5 text-foreground" />
               </button>
@@ -255,6 +257,7 @@ const MiniPlayer = () => {
                 <ListMusic className="w-4 h-4" />
               </button>
             )}
+            <LikeButton song={current} size={4} className="w-8 h-8 hover:bg-secondary" />
             <button onClick={prev} aria-label="Previous" className="w-8 h-8 rounded-full hover:bg-secondary flex items-center justify-center">
               <SkipBack className="w-4 h-4 text-foreground" />
             </button>

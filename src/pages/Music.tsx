@@ -2,9 +2,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, ListMusic, Loader2, Music as MusicIcon, Play, Search, User, X } from "lucide-react";
 import { Song, useMusicPlayer } from "@/contexts/MusicPlayerContext";
+import LikeButton from "@/components/LikeButton";
+import { rememberCategory, topPicks, trackSongPlay, useMusicTaste } from "@/lib/musicTaste";
 
 // Only 4 languages as per requirement.
 const CATEGORIES = [
+  { id: "foryou", label: "✨ For You" },
+  { id: "liked", label: "❤️ Liked" },
   { id: "trending", label: "🔥 Trending" },
   { id: "hindi", label: "🎬 Hindi" },
   { id: "haryanvi", label: "🌾 Haryanvi" },
@@ -30,6 +34,8 @@ const rankBadgeClass = (r: number) =>
 const Music = () => {
   const { play, current } = useMusicPlayer();
   const [category, setCategory] = useState("trending");
+  const { liked } = useMusicTaste();
+  const playSong = (s: Song, list: Song[]) => { trackSongPlay(s); play(s, list); };
   const [tab, setTab] = useState<"songs" | "playlists">("songs");
   const [query, setQuery] = useState("");
   const [submittedQuery, setSubmittedQuery] = useState("");
@@ -59,6 +65,27 @@ const Music = () => {
     const projectId = (import.meta as any).env.VITE_SUPABASE_PROJECT_ID;
     const anonKey = (import.meta as any).env.VITE_SUPABASE_PUBLISHABLE_KEY;
     const params = new URLSearchParams();
+    if (opts.tab === "songs" && !opts.q && opts.category === "foryou") {
+      // Personalised: top liked categories + top artists, interleaved.
+      const { cats, artists } = topPicks();
+      const sources = [
+        ...cats.slice(0, 2).map((c) => `category=${c}`),
+        ...artists.slice(0, 2).map((a) => `q=${encodeURIComponent(a)}`),
+      ];
+      if (!sources.length) sources.push("category=trending");
+      const lists = await Promise.all(sources.map(async (src) => {
+        try {
+          const r = await fetch(`https://${projectId}.supabase.co/functions/v1/saavn-music?${src}&page=${pageNum}`, { headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` } });
+          const j = await r.json();
+          const c = src.startsWith("category=") ? src.slice(9) : "";
+          if (c && Array.isArray(j?.songs)) rememberCategory(j.songs, c);
+          return Array.isArray(j?.songs) ? j.songs : [];
+        } catch { return []; }
+      }));
+      const out: Song[] = [];
+      for (let i = 0; i < 60; i++) lists.forEach((l) => { if (l[i]) out.push(l[i]); });
+      return { songs: out, hasMore: out.length > 0 };
+    }
     if (opts.tab === "songs") {
       // JioSaavn: real Hindi/regional songs as direct audio → background play
       if (opts.q) params.set("q", opts.q); else params.set("category", opts.category);
@@ -66,7 +93,7 @@ const Music = () => {
       try {
         const r = await fetch(`https://${projectId}.supabase.co/functions/v1/saavn-music?${params}`, { headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` } });
         const j = await r.json();
-        if (Array.isArray(j?.songs) && j.songs.length) return j;
+        if (Array.isArray(j?.songs) && j.songs.length) { rememberCategory(j.songs, opts.category); return j; }
       } catch { /* fall back to YouTube */ }
       params.delete("category"); params.delete("q");
     }
@@ -88,6 +115,7 @@ const Music = () => {
 
   const loadMore = useCallback(async () => {
     if (loading || !hasMore) return;
+    if (category === "liked" && tab === "songs" && !submittedQuery) { setHasMore(false); return; }
     setLoading(true); setError(null);
     const myId = ++reqId.current;
     try {
@@ -294,13 +322,16 @@ const Music = () => {
 
         {tab === "songs" && (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            {songs.map((s, i) => {
+            {category === "liked" && !submittedQuery && liked.length === 0 && (
+              <p className="col-span-full text-center text-sm text-muted-foreground py-10">❤️ Gaano par heart dabayein — yahan dikhenge</p>
+            )}
+            {(category === "liked" && !submittedQuery ? liked : songs).map((s, i, list) => {
               const active = current?.videoId === s.videoId;
               const rankNo = i + 1;
-              const showRank = !submittedQuery;
+              const showRank = !submittedQuery && category !== "liked" && category !== "foryou";
               return (
                 <div key={s.videoId} className="text-left group">
-                  <button onClick={() => play(s, songs)} className="w-full text-left" aria-label={`Play ${s.title}`}>
+                  <button onClick={() => playSong(s, list)} onDoubleClick={(e) => { e.preventDefault(); (e.currentTarget.querySelector("[aria-label='Like'],[aria-label='Unlike']") as HTMLButtonElement | null)?.click(); }} className="w-full text-left" aria-label={`Play ${s.title}`}>
                     <div className={`relative aspect-video rounded-lg overflow-hidden bg-secondary/40 ring-2 ${active ? "ring-primary" : "ring-transparent"}`}>
                       <img src={s.thumbnail} alt={s.title} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
@@ -317,6 +348,7 @@ const Music = () => {
                       {(s as any).isNew && (
                         <span className="absolute top-1 right-1 h-5 px-1.5 rounded-md flex items-center text-[10px] font-bold bg-primary text-primary-foreground">🆕 New</span>
                       )}
+                      <LikeButton song={s} size={4} className="absolute bottom-1 left-1 w-7 h-7 bg-background/70 backdrop-blur" />
                       {s.duration && (
                         <span className="absolute bottom-1 right-1 text-[10px] font-medium text-white bg-black/70 px-1.5 py-0.5 rounded">
                           {s.duration}
