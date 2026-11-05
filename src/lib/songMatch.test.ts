@@ -12,3 +12,12 @@ describe("isSameSong", () => {
   it("matches film suffix", () => expect(isSameSong("Shararat", 'Shararat (From "Dhurandhar")')).toBe(true));
   it("rejects different song", () => expect(isSameSong("Kesariya", "Tum Hi Ho")).toBe(false));
 });
+
+import { songCandidates as sc2 } from "./songMatch";
+describe("bhojpuri titles", () => {
+  it("skips #Video and picks song name", () => {
+    expect(sc2("#Video | बर्बादी होई | #शिल्पी राज | Barbaadi Hoi | Bhojpuri Song 2026")[0]).toBe("Barbaadi Hoi");
+    expect(sc2("#Video | Kamariya Me Dardiya | #Khesari Lal Yadav | New Bhojpuri Song")[0]).toBe("Kamariya Me Dardiya");
+    expect(sc2("Khesari Lal Yadav New Song | Suit Lalka | Bhojpuri")[0]).toBe("Suit Lalka");
+  });
+});
