@@ -47,11 +47,22 @@ const MiniPlayer = () => {
     <>
       {/* Persistent single iframe host */}
       <div
-        className={showBigVideo ? "fixed inset-x-0 top-20 mx-auto z-[95] w-full max-w-2xl px-4" : ""}
+        className={showBigVideo ? "fixed inset-x-0 top-0 mx-auto z-[95] w-full max-w-3xl pt-[env(safe-area-inset-top)] bg-background" : ""}
         style={iframeWrapperStyle}
         aria-hidden={!showBigVideo}
       >
-        <div className={showBigVideo ? "aspect-video rounded-2xl overflow-hidden bg-black shadow-2xl" : ""}>
+        <div className={showBigVideo ? "relative aspect-video overflow-hidden bg-background" : ""}>
+          {showBigVideo && (
+            <>
+              <div className="absolute inset-x-0 top-0 h-12 z-10 bg-gradient-to-b from-background/90 to-transparent pointer-events-none" />
+              <button onClick={() => setExpanded(false)} aria-label="Minimize" className="absolute top-2 left-2 z-20 w-9 h-9 rounded-full bg-background/60 backdrop-blur flex items-center justify-center">
+                <ChevronDown className="w-5 h-5 text-foreground" />
+              </button>
+              <button onClick={close} aria-label="Close" className="absolute top-2 right-2 z-20 w-9 h-9 rounded-full bg-background/60 backdrop-blur flex items-center justify-center">
+                <X className="w-5 h-5 text-foreground" />
+              </button>
+            </>
+          )}
           {!isAudio && <iframe
             key={`${playVideoId || current.videoId}-${current.playlistId || "video"}`}
             ref={iframeRef}
@@ -59,7 +70,7 @@ const MiniPlayer = () => {
             title={current.title}
             allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
             allowFullScreen
-            className={showBigVideo ? "w-full h-full border-0" : ""}
+            className={showBigVideo ? "absolute border-0 left-0 w-full top-[-60px] h-[calc(100%+120px)] pointer-events-auto" : ""}
           />}
         </div>
       </div>
@@ -67,7 +78,7 @@ const MiniPlayer = () => {
       {/* Full-screen expanded UI */}
       {expanded && (
         <div className="fixed inset-0 z-[90] bg-background/95 backdrop-blur-xl flex flex-col">
-          <div className="flex items-center justify-between p-4 border-b border-border">
+          {!showBigVideo && <div className="flex items-center justify-between p-4 border-b border-border">
             <button onClick={() => setExpanded(false)} aria-label="Minimize" className="w-10 h-10 rounded-full bg-secondary/60 hover:bg-secondary flex items-center justify-center">
               <ChevronDown className="w-5 h-5 text-foreground" />
             </button>
@@ -75,10 +86,10 @@ const MiniPlayer = () => {
             <button onClick={close} aria-label="Close" className="w-10 h-10 rounded-full bg-secondary/60 hover:bg-secondary flex items-center justify-center">
               <X className="w-5 h-5 text-foreground" />
             </button>
-          </div>
-          <div className="flex-1 flex flex-col items-center px-4 gap-6 overflow-y-auto py-6">
+          </div>}
+          <div className={`flex-1 flex flex-col items-center px-4 gap-6 overflow-y-auto ${showBigVideo ? "pt-0 pb-6" : "py-6"}`}>
             {/* Spacer for the fixed video above */}
-            {showVideo && !isAudio && <div className="w-full max-w-2xl aspect-video" />}
+            {showBigVideo && <div className="w-[calc(100%+2rem)] -mx-4 max-w-3xl aspect-video shrink-0 pt-[env(safe-area-inset-top)] box-content" />}
             {(!showVideo || isAudio) && (
               <div className="w-64 h-64 rounded-2xl overflow-hidden shadow-2xl relative mt-6">
                 <img src={current.thumbnail} alt={current.title} className="w-full h-full object-cover" />
