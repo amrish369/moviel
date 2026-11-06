@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronUp, Download, ListMusic, Music, Pause, Play, Rewind, FastForward, SkipBack, SkipForward, Video, VideoOff, X } from "lucide-react";
+import { ChevronDown, ChevronUp, Download, ListMusic, Music, Pause, Play, Rewind, FastForward, SkipBack, SkipForward, Video, VideoOff, X, Maximize, Minimize } from "lucide-react";
 import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
 import LikeButton from "@/components/LikeButton";
 
@@ -8,6 +8,25 @@ const MiniPlayer = () => {
   const [modeErr, setModeErr] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const [showQueue, setShowQueue] = useState(false);
+  const [landscape, setLandscape] = useState(false);
+  const [rotated, setRotated] = useState(false);
+  const toggleLandscape = async () => {
+    if (landscape) {
+      try { (screen.orientation as any)?.unlock?.(); } catch { /* noop */ }
+      if (document.fullscreenElement) await document.exitFullscreen().catch(() => {});
+      setLandscape(false); setRotated(false);
+      return;
+    }
+    let locked = false;
+    try {
+      await document.documentElement.requestFullscreen?.();
+      await (screen.orientation as any)?.lock?.("landscape");
+      locked = true;
+    } catch { /* fallback to CSS rotate */ }
+    setRotated(!locked && window.innerHeight > window.innerWidth);
+    setLandscape(true);
+  };
+  useEffect(() => { if (!expanded && landscape) { setLandscape(false); setRotated(false); } }, [expanded, landscape]);
 
   useEffect(() => {
     registerIframe(iframeRef.current);
@@ -47,11 +66,14 @@ const MiniPlayer = () => {
     <>
       {/* Persistent single iframe host */}
       <div
-        className={showBigVideo ? "fixed inset-x-0 top-0 mx-auto z-[95] w-full max-w-3xl pt-[env(safe-area-inset-top)] bg-background" : ""}
+        className={showBigVideo ? (landscape ? "fixed inset-0 z-[96] bg-background flex items-center justify-center overflow-hidden" : "fixed inset-x-0 top-0 mx-auto z-[95] w-full max-w-3xl pt-[env(safe-area-inset-top)] bg-background") : ""}
         style={iframeWrapperStyle}
         aria-hidden={!showBigVideo}
       >
-        <div className={showBigVideo ? "relative aspect-video overflow-hidden bg-background" : ""}>
+        <div
+          className={showBigVideo ? (landscape ? "relative overflow-hidden bg-background shrink-0" : "relative w-full h-[38vh] min-h-[220px] overflow-hidden bg-background") : ""}
+          style={showBigVideo && landscape ? (rotated ? { width: "100vh", height: "100vw", transform: "rotate(90deg)" } : { width: "100vw", height: "100vh" }) : undefined}
+        >
           {showBigVideo && (
             <>
               <div className="absolute inset-x-0 top-0 h-12 z-10 bg-gradient-to-b from-background/90 to-transparent pointer-events-none" />
@@ -60,6 +82,9 @@ const MiniPlayer = () => {
               </button>
               <button onClick={close} aria-label="Close" className="absolute top-2 right-2 z-20 w-9 h-9 rounded-full bg-background/60 backdrop-blur flex items-center justify-center">
                 <X className="w-5 h-5 text-foreground" />
+              </button>
+              <button onClick={toggleLandscape} aria-label={landscape ? "Portrait" : "Landscape"} className="absolute bottom-2 right-2 z-20 w-9 h-9 rounded-full bg-background/60 backdrop-blur flex items-center justify-center">
+                {landscape ? <Minimize className="w-5 h-5 text-foreground" /> : <Maximize className="w-5 h-5 text-foreground" />}
               </button>
             </>
           )}
@@ -89,7 +114,34 @@ const MiniPlayer = () => {
           </div>}
           <div className={`flex-1 flex flex-col items-center px-4 gap-6 overflow-y-auto ${showBigVideo ? "pt-0 pb-6" : "py-6"}`}>
             {/* Spacer for the fixed video above */}
-            {showBigVideo && <div className="w-[calc(100%+2rem)] -mx-4 max-w-3xl aspect-video shrink-0 pt-[env(safe-area-inset-top)] box-content" />}
+            {showBigVideo && <div className="w-full h-[38vh] min-h-[220px] shrink-0 pt-[env(safe-area-inset-top)] box-content" />}
+            {showBigVideo && (
+              <div className="w-full max-w-xl -mt-3 space-y-2">
+                {!isPlaylistOnly && (
+                  <input type="range" min={0} max={Math.max(1, Math.floor(duration))} value={Math.floor(currentTime)}
+                    onChange={(e) => seekTo(Number(e.target.value))} aria-label="Seek" className="w-full h-1 accent-primary cursor-pointer" />
+                )}
+                <div className="flex items-center gap-2">
+                  <div className="min-w-0 flex-1">
+                    <h2 className="font-display text-sm font-bold text-foreground line-clamp-1">{current.title}</h2>
+                    <p className="text-[11px] text-muted-foreground truncate">{current.channel}{duration > 0 ? ` • ${fmt(currentTime)} / ${fmt(duration)}` : ""}</p>
+                  </div>
+                  <LikeButton song={current} size={4} className="w-9 h-9 bg-secondary/60" />
+                  {hasAudio && (
+                    <button onClick={() => { setModeErr(false); switchMode("audio"); }} aria-label="Audio mode" className="w-9 h-9 rounded-full bg-secondary/60 flex items-center justify-center">
+                      <Music className="w-4 h-4 text-foreground" />
+                    </button>
+                  )}
+                  <button onClick={prev} aria-label="Previous" className="w-9 h-9 rounded-full bg-secondary/60 flex items-center justify-center"><SkipBack className="w-4 h-4 text-foreground" /></button>
+                  <button onClick={toggle} aria-label={isPlaying ? "Pause" : "Play"} className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+                    {isPlaying ? <Pause className="w-4 h-4 text-primary-foreground fill-primary-foreground" /> : <Play className="w-4 h-4 text-primary-foreground fill-primary-foreground ml-0.5" />}
+                  </button>
+                  <button onClick={next} aria-label="Next" className="w-9 h-9 rounded-full bg-secondary/60 flex items-center justify-center"><SkipForward className="w-4 h-4 text-foreground" /></button>
+                </div>
+              </div>
+            )}
+            {!showBigVideo && <>
+
             {(!showVideo || isAudio) && (
               <div className="w-64 h-64 rounded-2xl overflow-hidden shadow-2xl relative mt-6">
                 <img src={current.thumbnail} alt={current.title} className="w-full h-full object-cover" />
@@ -175,6 +227,7 @@ const MiniPlayer = () => {
                 ? (isAudio ? "🎧 Audio: screen lock par bhi gaana chalta rahega." : "🎬 Video: screen lock karte hi gaana apne aap audio par chalta rahega.")
                 : "Mobile screen-off par YouTube pause kar sakta hai."}
             </p>
+            </>}
 
             {queue.length > 1 && (
               <div className="w-full max-w-xl mt-2">
@@ -195,12 +248,13 @@ const MiniPlayer = () => {
                           <span className="w-6 text-xs font-mono text-muted-foreground shrink-0 text-center">
                             {active ? <Play className="w-3 h-3 text-primary fill-primary inline" /> : i + 1}
                           </span>
-                          <div className="relative w-14 h-9 rounded overflow-hidden shrink-0 bg-secondary">
+                          <div className="relative w-36 aspect-video rounded-lg overflow-hidden shrink-0 bg-secondary">
                             <img src={s.thumbnail} alt="" loading="lazy" className="w-full h-full object-cover" />
+                            {s.duration && <span className="absolute bottom-1 right-1 px-1 rounded bg-background/80 text-[10px] font-mono text-foreground">{s.duration}</span>}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className={`text-xs font-semibold line-clamp-1 ${active ? "text-primary" : "text-foreground"}`}>{s.title}</p>
-                            <p className="text-[10px] text-muted-foreground truncate">{s.channel}{s.duration ? ` • ${s.duration}` : ""}</p>
+                            <p className={`text-sm font-semibold line-clamp-2 ${active ? "text-primary" : "text-foreground"}`}>{s.title}</p>
+                            <p className="text-xs text-muted-foreground truncate mt-0.5">{s.channel}</p>
                           </div>
                         </button>
                       </li>
