@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronUp, Download, ListMusic, Music, Pause, Play, Rewind, FastForward, SkipBack, SkipForward, Video, VideoOff, X, Maximize, Minimize } from "lucide-react";
 import { useMusicPlayer } from "@/contexts/MusicPlayerContext";
 import LikeButton from "@/components/LikeButton";
+import VideoGestureLayer from "@/components/VideoGestureLayer";
 
 const MiniPlayer = () => {
   const { current, queue, isPlaying, showVideo, expanded, currentTime, duration, toggle, next, prev, jumpTo, close, seekTo, seekBy, setShowVideo, setExpanded, registerIframe, audioActive, playVideoId, videoStart, resolvingVideo, switchMode } = useMusicPlayer();
@@ -27,6 +28,25 @@ const MiniPlayer = () => {
     setLandscape(true);
   };
   useEffect(() => { if (!expanded && landscape) { setLandscape(false); setRotated(false); } }, [expanded, landscape]);
+  const [locked, setLocked] = useState(false);
+  const [brightness, setBrightness] = useState(100);
+  useEffect(() => { if (!landscape) setLocked(false); }, [landscape]);
+  // Auto fullscreen when the phone is physically rotated to landscape
+  useEffect(() => {
+    const mq = window.matchMedia("(orientation: landscape)");
+    const onChange = async () => {
+      if (!expanded || !showVideo || audioActive) return;
+      if (mq.matches && window.innerWidth < 1024) {
+        try { await document.documentElement.requestFullscreen?.(); } catch { /* noop */ }
+        setRotated(false); setLandscape(true);
+      } else if (!mq.matches && landscape && !rotated) {
+        if (document.fullscreenElement) await document.exitFullscreen().catch(() => {});
+        setLandscape(false);
+      }
+    };
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, [expanded, showVideo, audioActive, landscape, rotated]);
 
   useEffect(() => {
     registerIframe(iframeRef.current);
@@ -75,6 +95,9 @@ const MiniPlayer = () => {
           style={showBigVideo && landscape ? (rotated ? { width: "100vh", height: "100vw", transform: "rotate(90deg)" } : { width: "100vw", height: "100vh" }) : undefined}
         >
           {showBigVideo && (
+            <VideoGestureLayer iframe={iframeRef.current} locked={locked} onLockChange={setLocked} brightness={brightness} onBrightness={setBrightness} />
+          )}
+          {showBigVideo && !locked && (
             <>
               <div className="absolute inset-x-0 top-0 h-12 z-10 bg-gradient-to-b from-background/90 to-transparent pointer-events-none" />
               <button onClick={() => setExpanded(false)} aria-label="Minimize" className="absolute top-2 left-2 z-20 w-9 h-9 rounded-full bg-background/60 backdrop-blur flex items-center justify-center">
@@ -95,7 +118,8 @@ const MiniPlayer = () => {
             title={current.title}
             allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
             allowFullScreen
-            className={showBigVideo ? "absolute border-0 left-0 w-full top-[-60px] h-[calc(100%+120px)] pointer-events-auto" : ""}
+            style={showBigVideo ? { filter: `brightness(${brightness}%)` } : undefined}
+            className={showBigVideo ? "absolute border-0 left-0 w-full top-[-60px] h-[calc(100%+120px)] pointer-events-none" : ""}
           />}
         </div>
       </div>
