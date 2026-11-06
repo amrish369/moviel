@@ -103,6 +103,13 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
   currentTimeRef.current = currentTime;
   const currentIdRef = useRef<string | null>(null);
   currentIdRef.current = current?.videoId || null;
+  // Every new song starts from 0:00 — never carry over the previous song's position.
+  useEffect(() => {
+    setVideoStart(0);
+    setCurrentTime(0);
+    setDuration(0);
+    try { if (audioRef.current && !audioRef.current.src.startsWith("data:")) audioRef.current.currentTime = 0; } catch {}
+  }, [current?.videoId, index]);
   const playVideoId = current ? (current.audioUrl ? ytMap[current.videoId] || null : current.videoId) : null;
   const audioActive = Boolean(current?.audioUrl) && !(videoMode && playVideoId);
   isAudioRef.current = audioActive;
@@ -139,6 +146,9 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
     claimMedia("music");
     const q = list && list.length ? list : [song];
     const idx = Math.max(0, q.findIndex((s) => s.videoId === song.videoId));
+    setVideoStart(0);
+    setCurrentTime(0);
+    currentTimeRef.current = 0;
     setQueue(q);
     setIndex(idx);
     setIsPlaying(true);
