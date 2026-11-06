@@ -98,7 +98,7 @@ const VideoGestureLayer = ({ iframe, locked, onLockChange, brightness, onBrightn
         <button
           onClick={() => { onLockChange(!locked); flashLock(); }}
           aria-label={locked ? "Unlock screen" : "Lock screen"}
-          className={`absolute left-1/2 -translate-x-1/2 bottom-3 z-30 w-11 h-11 rounded-full backdrop-blur flex items-center justify-center transition-opacity ${locked ? "bg-primary/80" : "bg-background/60"} ${locked && !showLock ? "opacity-0" : "opacity-100"}`}
+          className={`absolute left-1/2 -translate-x-1/2 bottom-3 z-30 w-11 h-11 rounded-full backdrop-blur flex items-center justify-center transition-opacity ${locked ? "bg-primary/80" : "bg-background/60"} ${locked && !showLock ? "opacity-0 pointer-events-none" : "opacity-100"}`}
         >
           {locked ? <Lock className="w-5 h-5 text-primary-foreground" /> : <LockOpen className="w-5 h-5 text-foreground" />}
         </button>
