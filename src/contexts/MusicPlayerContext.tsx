@@ -1,6 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { claimMedia, onMediaClaim } from "@/lib/mediaBus";
-import { songCandidates, isSameSong } from "@/lib/songMatch";
+import { songCandidates, isSameSong, cleanSongTitle } from "@/lib/songMatch";
+import { artistOf, categoryOf, isLiked } from "@/lib/musicTaste";
+import { toast } from "@/hooks/use-toast";
 
 // 0.1s valid silent WAV — used to unlock the audio element on a user tap.
 const SILENT_WAV = (() => {
@@ -461,6 +463,8 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
   // Instagram-style smart queue: after 60s of listening or a like,
   // replace Up Next with songs of the same singer + category.
   const vibed = useRef<Set<string>>(new Set());
+  const curSongRef = useRef<Song | null>(null);
+  curSongRef.current = current;
   const refreshVibe = useCallback(async (song: Song) => {
     if (!song?.videoId || vibed.current.has(song.videoId)) return;
     vibed.current.add(song.videoId);
@@ -488,7 +492,7 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
     if (current && isPlaying && currentTime >= 60) refreshVibe(current);
   }, [current, isPlaying, currentTime >= 60, refreshVibe]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
-    const f = () => { const c = queueRef.current; if (c && isLiked(c.videoId)) refreshVibe(c); };
+    const f = () => { const c = curSongRef.current; if (c && isLiked(c.videoId)) refreshVibe(c); };
     window.addEventListener("cineradar:music-taste", f);
     return () => window.removeEventListener("cineradar:music-taste", f);
   }, [refreshVibe]);
