@@ -228,7 +228,7 @@ const Music = () => {
     <div className="min-h-screen bg-background pb-32">
       <header className="border-b border-border sticky top-0 z-40 bg-background/80 backdrop-blur-xl">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-3">
-          <Link to="/" aria-label="Back" className="w-9 h-9 rounded-lg bg-secondary/60 hover:bg-secondary flex items-center justify-center">
+          <Link to="/" aria-label="Back" className="hidden sm:flex w-9 h-9 rounded-lg bg-secondary/60 hover:bg-secondary flex items-center justify-center">
             <ArrowLeft className="w-5 h-5 text-foreground" />
           </Link>
           <div className="w-9 h-9 rounded-lg bg-primary/15 flex items-center justify-center glow-gold">

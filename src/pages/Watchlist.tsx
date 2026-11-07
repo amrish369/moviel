@@ -28,7 +28,7 @@ const Watchlist = () => {
     <div className="min-h-screen bg-background">
       <header className="border-b border-border sticky top-0 z-50 bg-background/80 backdrop-blur-xl">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-3">
-          <Link to="/" className="w-9 h-9 rounded-lg bg-secondary/60 hover:bg-secondary flex items-center justify-center">
+          <Link to="/" className="hidden sm:flex w-9 h-9 rounded-lg bg-secondary/60 hover:bg-secondary flex items-center justify-center">
             <ArrowLeft className="w-4 h-4" />
           </Link>
           <div className="flex items-center gap-2">
