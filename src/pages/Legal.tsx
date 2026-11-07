@@ -52,7 +52,7 @@ export const Privacy = () => {
       <h2>Information we collect</h2>
       <ul>
         <li>Account data (email address) if you choose to sign in.</li>
-        <li>Preferences such as watchlist, liked titles and study progress, stored in your browser or in your account.</li>
+        <li>Preferences such as watchlist, liked titles,, stored in your browser or in your account.</li>
         <li>Anonymous usage data — pages viewed, device type, approximate region.</li>
       </ul>
       <h2>Cookies and advertising</h2>
@@ -74,7 +74,7 @@ export const Privacy = () => {
 };
 
 export const Terms = () => {
-  useMeta("Terms of Service | CineRadar", "Terms and conditions for using CineRadar's movie discovery, music and study features.");
+  useMeta("Terms of Service | CineRadar", "Terms and conditions for using CineRadar's movie discovery and music features.");
   return (
     <Shell title="Terms of Service">
       <p>Last updated: {updated}</p>
@@ -82,7 +82,7 @@ export const Terms = () => {
       <p>By using CineRadar you agree to these terms. If you do not agree, please stop using the site.</p>
       <h2>Use of the service</h2>
       <ul>
-        <li>CineRadar provides movie information, trailers, publicly available music and study material discovery.</li>
+        <li>CineRadar provides movie information, trailers and publicly available music.</li>
         <li>You agree not to misuse the service, attempt to break its security, or scrape it automatically.</li>
         <li>Accounts must not be shared or used to impersonate others.</li>
       </ul>
@@ -99,7 +99,7 @@ export const Terms = () => {
 };
 
 export const About = () => {
-  useMeta("About CineRadar — AI Movie Intelligence", "CineRadar is an AI-powered dashboard for Bollywood, South Indian and OTT movies, music and study content.");
+  useMeta("About CineRadar — AI Movie Intelligence", "CineRadar is an AI-powered dashboard for Bollywood, South Indian and OTT movies and music.");
   return (
     <Shell title="About CineRadar">
       <h2>What we do</h2>
@@ -109,7 +109,6 @@ export const About = () => {
         <li>A personalised infinite feed of Bollywood, Tamil, Telugu, Malayalam and Kannada titles.</li>
         <li>Instagram-style trailer reels and full movie detail pages with cast and plot.</li>
         <li>A music section with background playback and artist pages.</li>
-        <li>A study hub with subject-wise lecture playlists, progress tracking and quizzes.</li>
       </ul>
       <h2>Our data</h2>
       <p>Movie information comes from TMDB, videos are embedded from YouTube, and editorial summaries are generated with AI and reviewed for accuracy.</p>
