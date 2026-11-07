@@ -24,7 +24,6 @@ const BOT_URL = "https://t.me/Cinedbot";
 const QUICK_LINKS = [
   { to: "/", label: "Home" },
   { to: "/music", label: "Music" },
-  { to: "/study", label: "Study Hub" },
   { to: "/about", label: "About" },
 ];
 
@@ -286,7 +285,7 @@ const Verify = () => {
             <li>Daily Bollywood, Tamil, Telugu, Malayalam and OTT releases.</li>
             <li>Trailer reels and full movie pages with cast and plot.</li>
             <li>Reviews, box office numbers and AI picks made for you.</li>
-            <li>A music player with background play and a free study hub.</li>
+            <li>A music player with background play.</li>
           </ul>
           <Link
             to="/"
@@ -368,7 +367,7 @@ const Verify = () => {
         <ul className="text-xs text-muted-foreground space-y-1 list-disc pl-4">
           <li>Daily Bollywood, Tamil, Telugu and OTT releases.</li>
           <li>Trailer reels, cast, plot and box office numbers.</li>
-          <li>Free music player and a study hub.</li>
+          <li>Free music player.</li>
         </ul>
         <nav className="flex flex-wrap justify-center gap-2 pt-1">
           {QUICK_LINKS.map((l) => (

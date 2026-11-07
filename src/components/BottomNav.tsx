@@ -1,10 +1,9 @@
 import { NavLink } from "react-router-dom";
-import { Clapperboard, Music, GraduationCap, Bookmark } from "lucide-react";
+import { Clapperboard, Music, Bookmark } from "lucide-react";
 
 const items = [
   { to: "/", label: "Movies", icon: Clapperboard, end: true },
   { to: "/music", label: "Music", icon: Music, end: false },
-  { to: "/study", label: "Study", icon: GraduationCap, end: false },
   { to: "/watchlist", label: "Watchlist", icon: Bookmark, end: false },
 ];
 

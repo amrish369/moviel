@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Clapperboard, Wifi, WifiOff, Loader2, Search, Star, X, Menu, Sparkles, Tv, CalendarDays, History, Rocket, CalendarRange, Users, MessageSquare, TrendingUp, Globe2, Gem, Infinity as InfinityIcon, Bookmark, LogIn, User as UserIcon, Play, MonitorPlay, Music as MusicIcon, GraduationCap } from "lucide-react";
+import { Clapperboard, Wifi, WifiOff, Loader2, Search, Star, X, Menu, Sparkles, Tv, CalendarDays, History, Rocket, CalendarRange, Users, MessageSquare, TrendingUp, Globe2, Gem, Infinity as InfinityIcon, Bookmark, LogIn, User as UserIcon, Play, MonitorPlay, Music as MusicIcon } from "lucide-react";
 import DownloadButton from "@/components/DownloadButton";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -198,15 +198,6 @@ const Index = () => {
                   <SheetTitle className="text-gradient-gold font-display">Sections</SheetTitle>
                 </SheetHeader>
                 <nav className="flex-1 overflow-y-auto p-2">
-                  <SheetClose asChild>
-                    <Link
-                      to="/study"
-                      className="w-full flex items-center gap-3 px-3 py-2.5 mb-1 rounded-md text-sm text-foreground hover:bg-secondary/70 hover:text-primary transition-colors"
-                    >
-                      <GraduationCap className="w-4 h-4 text-primary/70" />
-                      <span>Study Hub (BCA)</span>
-                    </Link>
-                  </SheetClose>
                   {sections.map((s) => (
                     <SheetClose asChild key={s.id}>
                       <button
@@ -255,9 +246,6 @@ const Index = () => {
             </Link>
             <Link to="/music" aria-label="Music" className="w-8 h-8 shrink-0 rounded-lg bg-secondary/60 hover:bg-secondary flex items-center justify-center">
               <MusicIcon className="w-4 h-4 text-primary" />
-            </Link>
-            <Link to="/study" aria-label="Study Hub" className="hidden min-[400px]:flex w-8 h-8 shrink-0 rounded-lg bg-secondary/60 hover:bg-secondary items-center justify-center">
-              <GraduationCap className="w-4 h-4 text-primary" />
             </Link>
             {user ? (
               <Link to="/dashboard" aria-label="Dashboard" className="w-8 h-8 rounded-lg bg-primary/15 hover:bg-primary/25 flex items-center justify-center">
