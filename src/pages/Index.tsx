@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Clapperboard, Wifi, WifiOff, Loader2, Search, Star, X, Menu, Sparkles, Tv, CalendarDays, History, Rocket, CalendarRange, Users, MessageSquare, TrendingUp, Globe2, Gem, Infinity as InfinityIcon, Bookmark, LogIn, User as UserIcon, Play, MonitorPlay, Music as MusicIcon, GraduationCap } from "lucide-react";
+import { Clapperboard, Wifi, WifiOff, Loader2, Search, Star, X, Menu, Sparkles, Tv, CalendarDays, History, Rocket, CalendarRange, Users, MessageSquare, TrendingUp, Globe2, Gem, Infinity as InfinityIcon, Bookmark, LogIn, User as UserIcon, Play, MonitorPlay, Music as MusicIcon } from "lucide-react";
 import DownloadButton from "@/components/DownloadButton";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
