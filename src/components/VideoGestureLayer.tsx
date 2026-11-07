@@ -8,6 +8,7 @@ type Props = {
   brightness: number;
   onBrightness: (v: number) => void;
   onTap?: () => void;
+  onSeek?: (d: number) => void;
 };
 
 /**
@@ -16,7 +17,7 @@ type Props = {
  * - Left side vertical swipe = brightness, right side = volume
  * - Lock mode: ignores all touches until the lock button is pressed
  */
-const VideoGestureLayer = ({ iframe, locked, onLockChange, brightness, onBrightness, onTap, onSeek }: Props & { onSeek?: (d: number) => void }) => {
+const VideoGestureLayer = ({ iframe, locked, onLockChange, brightness, onBrightness, onTap, onSeek }: Props) => {
   const [volume, setVolume] = useState(100);
   const lastTap = useRef<{ t: number; side: "l" | "r" }>({ t: 0, side: "l" });
   const [seekFlash, setSeekFlash] = useState<null | "l" | "r">(null);
