@@ -25,7 +25,7 @@ const BottomNav = () => (
       className="sm:hidden fixed bottom-0 inset-x-0 z-[70] border-t border-border bg-background/90 backdrop-blur-xl"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
-      <div className="grid grid-cols-4 max-w-lg mx-auto">
+      <div className="grid grid-cols-3 max-w-lg mx-auto">
         {items.map(({ to, label, icon: Icon, end }) => (
           <NavLink
             key={to}

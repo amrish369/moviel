@@ -241,10 +241,10 @@ const Index = () => {
                 {isLive ? "LIVE" : "OFFLINE"}
               </span>
             </div>
-            <Link to="/watchlist" aria-label="Watchlist" className="w-8 h-8 shrink-0 rounded-lg bg-secondary/60 hover:bg-secondary flex items-center justify-center">
+            <Link to="/watchlist" aria-label="Watchlist" className="hidden sm:flex w-8 h-8 shrink-0 rounded-lg bg-secondary/60 hover:bg-secondary items-center justify-center">
               <Bookmark className="w-4 h-4 text-primary" />
             </Link>
-            <Link to="/music" aria-label="Music" className="w-8 h-8 shrink-0 rounded-lg bg-secondary/60 hover:bg-secondary flex items-center justify-center">
+            <Link to="/music" aria-label="Music" className="hidden sm:flex w-8 h-8 shrink-0 rounded-lg bg-secondary/60 hover:bg-secondary items-center justify-center">
               <MusicIcon className="w-4 h-4 text-primary" />
             </Link>
             {user ? (
