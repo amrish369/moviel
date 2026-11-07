@@ -24,6 +24,8 @@ export const rememberCategory = (songs: Song[], cat: string) => {
   songs.forEach((s) => catMap.set(s.videoId, cat));
 };
 
+export const categoryOf = (id: string) => catMap.get(id);
+
 export const artistOf = (s: Pick<Song, "channel">) =>
   (s.channel || "").replace(/\s*[-–]\s*topic\s*$/i, "").split(/,|&/)[0].trim();
 
