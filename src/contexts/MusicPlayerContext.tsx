@@ -1,6 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { claimMedia, onMediaClaim } from "@/lib/mediaBus";
-import { songCandidates, isSameSong } from "@/lib/songMatch";
+import { songCandidates, isSameSong, cleanSongTitle } from "@/lib/songMatch";
+import { artistOf, categoryOf, isLiked } from "@/lib/musicTaste";
+import { toast } from "@/hooks/use-toast";
 
 // 0.1s valid silent WAV — used to unlock the audio element on a user tap.
 const SILENT_WAV = (() => {
@@ -457,6 +459,43 @@ export const MusicPlayerProvider = ({ children }: { children: React.ReactNode })
       }
     }
   }, [queue, index]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Instagram-style smart queue: after 60s of listening or a like,
+  // replace Up Next with songs of the same singer + category.
+  const vibed = useRef<Set<string>>(new Set());
+  const curSongRef = useRef<Song | null>(null);
+  curSongRef.current = current;
+  const refreshVibe = useCallback(async (song: Song) => {
+    if (!song?.videoId || vibed.current.has(song.videoId)) return;
+    vibed.current.add(song.videoId);
+    const env = (import.meta as any).env;
+    const h = { apikey: env.VITE_SUPABASE_PUBLISHABLE_KEY, Authorization: `Bearer ${env.VITE_SUPABASE_PUBLISHABLE_KEY}` };
+    const base = `https://${env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/saavn-music?page=1`;
+    const artist = artistOf(song);
+    const cat = categoryOf(song.videoId);
+    const urls = [artist && `${base}&q=${encodeURIComponent(artist + " songs")}`, cat && `${base}&category=${cat}`].filter(Boolean) as string[];
+    const lists = await Promise.all(urls.map((u) => fetch(u, { headers: h }).then((r) => r.json()).then((j) => (j?.songs || []) as Song[]).catch(() => [] as Song[])));
+    const mixed: Song[] = [];
+    for (let i = 0; i < 30; i++) for (const l of lists) if (l[i]?.audioUrl) mixed.push(l[i]);
+    if (currentIdRef.current !== song.videoId || mixed.length < 3) return;
+    setQueue((q) => {
+      const i = q.findIndex((x) => x.videoId === song.videoId);
+      if (i < 0) return q;
+      const head = q.slice(0, i + 1);
+      const seen = new Set(head.map((x) => x.videoId));
+      const fresh = mixed.filter((x) => !seen.has(x.videoId) && !isSameSong(cleanSongTitle(song.title), x.title) && (seen.add(x.videoId), true)).slice(0, 25);
+      return fresh.length ? [...head, ...fresh] : q;
+    });
+    toast({ title: "✨ Up Next aapki pasand ke hisab se update ho gaya" });
+  }, []);
+  useEffect(() => {
+    if (current && isPlaying && currentTime >= 60) refreshVibe(current);
+  }, [current, isPlaying, currentTime >= 60, refreshVibe]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    const f = () => { const c = curSongRef.current; if (c && isLiked(c.videoId)) refreshVibe(c); };
+    window.addEventListener("cineradar:music-taste", f);
+    return () => window.removeEventListener("cineradar:music-taste", f);
+  }, [refreshVibe]);
 
 
 

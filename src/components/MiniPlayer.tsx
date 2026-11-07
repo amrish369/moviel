@@ -95,7 +95,7 @@ const MiniPlayer = () => {
           style={showBigVideo && landscape ? (rotated ? { width: "100vh", height: "100vw", transform: "rotate(90deg)" } : { width: "100vw", height: "100vh" }) : undefined}
         >
           {showBigVideo && (
-            <VideoGestureLayer iframe={iframeRef.current} locked={locked} onLockChange={setLocked} brightness={brightness} onBrightness={setBrightness} />
+            <VideoGestureLayer iframe={iframeRef.current} locked={locked} onLockChange={setLocked} brightness={brightness} onBrightness={setBrightness} onSeek={seekBy} />
           )}
           {showBigVideo && !locked && (
             <>
@@ -118,7 +118,7 @@ const MiniPlayer = () => {
             title={current.title}
             allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
             allowFullScreen
-            style={showBigVideo ? { filter: `brightness(${brightness}%)` } : undefined}
+            style={showBigVideo ? { filter: `brightness(${brightness}%) contrast(${brightness > 100 ? 100 + (brightness - 100) / 4 : 100}%)` } : undefined}
             className={showBigVideo ? "absolute border-0 left-0 w-full top-[-60px] h-[calc(100%+120px)] pointer-events-none" : ""}
           />}
         </div>

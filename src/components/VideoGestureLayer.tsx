@@ -8,6 +8,7 @@ type Props = {
   brightness: number;
   onBrightness: (v: number) => void;
   onTap?: () => void;
+  onSeek?: (d: number) => void;
 };
 
 /**
@@ -16,8 +17,10 @@ type Props = {
  * - Left side vertical swipe = brightness, right side = volume
  * - Lock mode: ignores all touches until the lock button is pressed
  */
-const VideoGestureLayer = ({ iframe, locked, onLockChange, brightness, onBrightness, onTap }: Props) => {
+const VideoGestureLayer = ({ iframe, locked, onLockChange, brightness, onBrightness, onTap, onSeek }: Props) => {
   const [volume, setVolume] = useState(100);
+  const lastTap = useRef<{ t: number; side: "l" | "r" }>({ t: 0, side: "l" });
+  const [seekFlash, setSeekFlash] = useState<null | "l" | "r">(null);
   const [hud, setHud] = useState<null | { kind: "vol" | "light"; value: number }>(null);
   const [showLock, setShowLock] = useState(false);
   const start = useRef<{ x: number; y: number; side: "l" | "r"; base: number; moved: boolean } | null>(null);
@@ -59,9 +62,9 @@ const VideoGestureLayer = ({ iframe, locked, onLockChange, brightness, onBrightn
     s.moved = true;
     const delta = (dy / h) * 100;
     if (s.side === "l") {
-      const v = Math.max(20, Math.min(150, s.base + delta));
+      const v = Math.max(25, Math.min(170, s.base + delta * 1.5));
       onBrightness(v);
-      flashHud("light", Math.round(((v - 20) / 130) * 100));
+      flashHud("light", Math.round(((v - 25) / 145) * 100));
     } else {
       const v = Math.round(Math.max(0, Math.min(100, s.base + delta)));
       setVolume(v);
@@ -72,7 +75,18 @@ const VideoGestureLayer = ({ iframe, locked, onLockChange, brightness, onBrightn
   const onUp = () => {
     const s = start.current;
     start.current = null;
-    if (s && !s.moved) { onTap?.(); flashLock(); }
+    if (s && !s.moved) {
+      const now = Date.now();
+      if (onSeek && now - lastTap.current.t < 300 && lastTap.current.side === s.side) {
+        const d = s.side === "l" ? -10 : 10;
+        onSeek(d); setSeekFlash(s.side);
+        window.setTimeout(() => setSeekFlash(null), 600);
+        lastTap.current = { t: 0, side: s.side };
+        return;
+      }
+      lastTap.current = { t: now, side: s.side };
+      onTap?.(); flashLock();
+    }
   };
 
   return (
@@ -85,6 +99,11 @@ const VideoGestureLayer = ({ iframe, locked, onLockChange, brightness, onBrightn
         onPointerCancel={() => (start.current = null)}
         onContextMenu={(e) => e.preventDefault()}
       />
+      {seekFlash && (
+        <div className={`absolute top-1/2 -translate-y-1/2 z-20 pointer-events-none px-3 py-1.5 rounded-full bg-background/70 backdrop-blur text-sm font-semibold text-primary animate-fade-in ${seekFlash === "l" ? "left-6" : "right-6"}`}>
+          {seekFlash === "l" ? "« 10s" : "10s »"}
+        </div>
+      )}
       {hud && (
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none flex items-center gap-2 px-4 py-2 rounded-full bg-background/70 backdrop-blur">
           {hud.kind === "vol" ? <Volume2 className="w-5 h-5 text-primary" /> : <Sun className="w-5 h-5 text-primary" />}
